@@ -1,9 +1,8 @@
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import declarative_base
+from app.domain.models.base_model import BaseModel
 
-Base = declarative_base()
 
-class User(Base):
+class User(BaseModel):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)

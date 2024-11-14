@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.infrastructure.repositories import user_repository
 from app.api.schemas.user import UserCreate, UserLogin
+from app.infrastructure.repositories import user_repository
 from app.infrastructure.security import verify_password
 
 def register_user(db: Session, user: UserCreate):
