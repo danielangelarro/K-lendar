@@ -1,6 +1,8 @@
-from pydantic import BaseModel as PydanticBaseModel, EmailStr
-from typing import List, Optional
+from typing import List
+from typing import Optional
 from datetime import datetime
+from pydantic import EmailStr
+from pydantic import BaseModel as PydanticBaseModel
 
 from app.domain.models.enum import UserRole
 from app.domain.models.enum import EventType
@@ -8,17 +10,25 @@ from app.domain.models.enum import EventStatus
 from app.domain.models.base_model import BaseModelSchema
 
 
+class Token(PydanticBaseModel):
+    access_token: str
+    token_type: str
+
+
+class LoginRequest(PydanticBaseModel):
+    username: str
+    password: str
+
+
 class UserCreate(BaseModelSchema):
     username: str
     email: EmailStr
     password: str
-    role: Optional[UserRole] = UserRole.USER
 
 
 class UserResponse(BaseModelSchema):
     username: str
     email: str
-    role: UserRole
 
 
 class GroupCreate(BaseModelSchema):

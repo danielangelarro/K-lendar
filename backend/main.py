@@ -3,8 +3,9 @@ from fastapi import FastAPI
 
 from app.settings import configure as inject_configure
 from app.api.user_router import router as user_router
-from app.infrastructure.postgresql.tables import Base
-from app.infrastructure.postgresql.database import engine
+from app.api.auth_router import router as auth_router
+from app.infrastructure.sqlite.tables import Base
+from app.infrastructure.sqlite.database import engine
 
 
 app = FastAPI()
@@ -16,7 +17,9 @@ async def startup():
 
 
 inject.configure(inject_configure)
+
 app.include_router(user_router)
+app.include_router(auth_router)
 
 if __name__ == "__main__":
     import uvicorn

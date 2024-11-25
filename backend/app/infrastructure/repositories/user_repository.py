@@ -4,7 +4,7 @@ from app.application.repositories.user_repository import IUserRepository
 from app.application.base_repository import BaseRepository
 from app.domain.models.schemma import UserCreate
 from app.domain.models.schemma import UserResponse
-from app.infrastructure.postgresql.tables import User
+from app.infrastructure.sqlite.tables import User
 from app.infrastructure.repositories.mapper import UserMapper
 
 
