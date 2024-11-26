@@ -11,7 +11,7 @@ from app.application.services.auth_service import IAuthService
 from app.domain.models.schemma import UserCreate
 from app.domain.models.schemma import UserResponse
 from app.domain.models.schemma import LoginRequest
-from app.domain.models.schemma import RegisterRequest
+from app.domain.models.schemma import UserCreate
 from app.domain.models.schemma import Token
 
 
@@ -20,7 +20,7 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserResponse)
 async def register(
-    user: RegisterRequest, 
+    user: UserCreate, 
 ):
     auth_service: IAuthService = inject.instance(IAuthService)
     return await auth_service.register_user(user)
