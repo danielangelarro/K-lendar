@@ -7,6 +7,7 @@ from pydantic import BaseModel as PydanticBaseModel
 from app.domain.models.enum import UserRole
 from app.domain.models.enum import EventType
 from app.domain.models.enum import EventStatus
+from app.domain.models.enum import InvitationStatus
 from app.domain.models.base_model import BaseModelSchema
 
 
@@ -29,6 +30,16 @@ class UserCreate(BaseModelSchema):
 class UserResponse(BaseModelSchema):
     username: str
     email: str
+
+
+class InviteUserRequest(BaseModelSchema):
+    user_ids: List[int]
+
+
+class AcceptDeclineResponse(BaseModelSchema):
+    event_id: int
+    user_id: int
+    status: InvitationStatus
 
 
 class GroupCreate(BaseModelSchema):

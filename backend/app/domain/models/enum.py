@@ -16,3 +16,8 @@ class EventStatus(PyEnum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
+
+
+class InvitationStatus(PyEnum):
+    ACCEPTED = "Accepted"
+    DECLINED = "Declined"
