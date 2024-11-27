@@ -3,8 +3,11 @@ from app.domain.models.schemma import UserCreate
 from app.domain.models.schemma import UserResponse
 from app.domain.models.schemma import EventCreate
 from app.domain.models.schemma import EventResponse
+from app.domain.models.schemma import GroupCreate
+from app.domain.models.schemma import GroupResponse
 from app.infrastructure.sqlite.tables import User
 from app.infrastructure.sqlite.tables import Event
+from app.infrastructure.sqlite.tables import Group
 
 
 class UserMapper(BaseMapper):
@@ -44,4 +47,23 @@ class EventMapper:
             status=event.status,
             creator=event.creator_rel,
             group=None
+        )
+
+
+class GroupMapper:
+    def to_table(self, group_create: GroupCreate) -> Group:
+        return Group(
+            group_name=group_create.name,
+            description=group_create.description,
+            is_hierarchical=group_create.is_hierarchical,
+            parent_group=None
+        )
+
+    def to_entity(self, group: Group) -> GroupResponse:
+        return GroupResponse(
+            id=group.id,
+            name=group.group_name,
+            description=group.description,
+            is_hierarchical=False,
+            members=[]
         )

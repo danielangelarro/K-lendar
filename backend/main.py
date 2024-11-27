@@ -5,6 +5,7 @@ from app.settings import configure as inject_configure
 from app.api.user_router import router as user_router
 from app.api.auth_router import router as auth_router
 from app.api.event_router import router as event_router
+from app.api.group_router import router as group_router
 from app.api.invitation_router import router as invitation_router
 from app.infrastructure.sqlite.tables import Base
 from app.infrastructure.sqlite.database import engine
@@ -24,6 +25,7 @@ inject.configure(inject_configure)
 app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(event_router)
+app.include_router(group_router)
 app.include_router(invitation_router)
 
 
