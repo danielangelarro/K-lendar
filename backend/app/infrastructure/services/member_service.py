@@ -1,9 +1,10 @@
 import uuid
 import inject
 from app.application.repositories.member_repository import IMemberRepository
+from app.application.services.member_service import IMemberService
 
 
-class MemberService:
+class MemberService(IMemberService):
     repo_instance: IMemberRepository = inject.attr(IMemberRepository)
 
     async def add_member(self, group_id: uuid.UUID, user_id: uuid.UUID) -> bool:

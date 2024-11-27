@@ -95,3 +95,15 @@ class NotificationResponse(BaseModelSchema):
     sender: uuid.UUID
     event: uuid.UUID
     is_read: bool
+
+
+class AgendaEventResponse(BaseModelSchema):
+    title: str
+    description: str
+    start_time: datetime
+    end_time: datetime
+
+
+class UserAgendaResponse(BaseModelSchema):
+    user_id: uuid.UUID
+    events: list[AgendaEventResponse]

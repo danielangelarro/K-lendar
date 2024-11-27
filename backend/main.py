@@ -6,6 +6,7 @@ from app.api.user_router import router as user_router
 from app.api.auth_router import router as auth_router
 from app.api.event_router import router as event_router
 from app.api.group_router import router as group_router
+from app.api.agenda_router import router as agenda_router
 from app.api.member_router import router as member_router
 from app.api.invitation_router import router as invitation_router
 from app.api.notification_router import router as notification_router
@@ -29,6 +30,7 @@ app.include_router(auth_router)
 app.include_router(event_router)
 app.include_router(group_router)
 app.include_router(member_router)
+app.include_router(agenda_router)
 app.include_router(invitation_router)
 app.include_router(notification_router)
 
