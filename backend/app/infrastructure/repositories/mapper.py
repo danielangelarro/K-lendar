@@ -1,11 +1,11 @@
 from app.application.base_repository import BaseMapper
-from app.domain.models.schemma import UserCreate
+from app.domain.models.schemma import MemberCreate, MemberResponse, UserCreate
 from app.domain.models.schemma import UserResponse
 from app.domain.models.schemma import EventCreate
 from app.domain.models.schemma import EventResponse
 from app.domain.models.schemma import GroupCreate
 from app.domain.models.schemma import GroupResponse
-from app.infrastructure.sqlite.tables import User
+from app.infrastructure.sqlite.tables import Member, User
 from app.infrastructure.sqlite.tables import Event
 from app.infrastructure.sqlite.tables import Group
 
@@ -25,7 +25,7 @@ class UserMapper(BaseMapper):
         )
 
 
-class EventMapper:
+class EventMapper(BaseMapper):
     def to_table(self, event_create: EventCreate) -> Event:
         return Event(
             title=event_create.title,
@@ -33,7 +33,6 @@ class EventMapper:
             start_datetime=event_create.start_time,
             end_datetime=event_create.end_time,
             creator=event_create.creator_id,
-            # Aquí puedes asignar el grupo si es necesario
             # group_id=event_create.group_id,
         )
 
@@ -50,7 +49,7 @@ class EventMapper:
         )
 
 
-class GroupMapper:
+class GroupMapper(BaseMapper):
     def to_table(self, group_create: GroupCreate) -> Group:
         return Group(
             group_name=group_create.name,
@@ -66,4 +65,18 @@ class GroupMapper:
             description=group.description,
             is_hierarchical=False,
             members=[]
+        )
+
+
+class MemberMapper(BaseMapper):
+    def to_table(self, member_create: MemberCreate) -> Member:
+        return Member(
+            user_id=member_create.user_id,
+            group_id=member_create.group_id,
+        )
+
+    def to_entity(self, member: Member) -> MemberResponse:
+        return MemberResponse(
+            user_id=member.user_id,
+            group_id=member.group_id,
         )

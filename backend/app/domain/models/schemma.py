@@ -1,3 +1,5 @@
+import uuid
+
 from typing import List
 from typing import Optional
 from datetime import datetime
@@ -33,12 +35,12 @@ class UserResponse(BaseModelSchema):
 
 
 class InviteUserRequest(BaseModelSchema):
-    user_ids: List[int]
+    user_ids: List[uuid.UUID]
 
 
 class AcceptDeclineResponse(BaseModelSchema):
-    event_id: int
-    user_id: int
+    event_id: uuid.UUID
+    user_id: uuid.UUID
     status: InvitationStatus
 
 
@@ -61,9 +63,9 @@ class EventCreate(BaseModelSchema):
     start_time: datetime
     end_time: datetime
     event_type: EventType
-    creator_id: int
-    group_id: Optional[int] = None
-    invitees: List[int] = []
+    creator_id: uuid.UUID
+    group_id: Optional[uuid.UUID] = None
+    invitees: List[uuid.UUID] = []
 
 
 class EventResponse(BaseModelSchema):
@@ -75,3 +77,13 @@ class EventResponse(BaseModelSchema):
     status: EventStatus
     creator: UserResponse
     group: Optional[GroupResponse] = None
+
+
+class MemberCreate(BaseModelSchema):
+    user_id: uuid.UUID
+    group_id: uuid.UUID
+
+
+class MemberResponse(BaseModelSchema):
+    user_id: uuid.UUID
+    group_id: uuid.UUID

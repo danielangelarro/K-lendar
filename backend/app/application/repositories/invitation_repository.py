@@ -1,10 +1,7 @@
-from typing import List
 import uuid
+from typing import List
 
 from abc import ABC, abstractmethod
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.domain.models.schemma import UserCreate
 
 
 class IInvitationRepository(ABC):
