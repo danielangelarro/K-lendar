@@ -1,8 +1,9 @@
-import os
 import jwt
-from datetime import timedelta
 from datetime import datetime
+from fastapi import status
+from fastapi import Depends
 from fastapi import HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 import inject
 
@@ -17,6 +18,7 @@ from app.settings import settings
 class AuthService(IAuthService):
     repo_instance: IUserRepository = inject.attr(IUserRepository)
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
     async def register_user(self, user: UserCreate) -> UserResponse:
         user.password = self.get_password_hash(user.password)
@@ -40,3 +42,26 @@ class AuthService(IAuthService):
 
     def get_password_hash(self, password):
         return self.pwd_context.hash(password)
+
+    async def get_current_user(self, token: str) -> UserResponse:
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            username: str = payload.get("sub")
+            if username is None:
+                raise credentials_exception
+            user = await self.repo_instance.get_by_id(username)
+            if user is None:
+                raise credentials_exception
+            return user
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
+        except jwt.InvalidTokenError:
+            raise credentials_exception
+
+    async def get_current_user_dependency(self, token: str = Depends(oauth2_scheme)) -> UserResponse:
+        return await self.get_current_user(token)

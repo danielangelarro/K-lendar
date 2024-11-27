@@ -20,6 +20,7 @@ async def startup():
 
 inject.configure(inject_configure)
 
+# Routes
 app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(event_router)

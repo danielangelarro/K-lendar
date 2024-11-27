@@ -19,9 +19,7 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(
-    user: UserCreate, 
-):
+async def register(user: UserCreate):
     auth_service: IAuthService = inject.instance(IAuthService)
     return await auth_service.register_user(user)
 

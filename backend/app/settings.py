@@ -1,5 +1,4 @@
 import os
-import inject
 from pydantic import BaseSettings
 
 
