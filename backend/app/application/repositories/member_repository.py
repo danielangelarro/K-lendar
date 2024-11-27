@@ -1,10 +1,11 @@
 import uuid
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
+from app.application.base_repository import BaseRepository
 from app.domain.models.schemma import MemberResponse
 
 
-class IMemberRepository(ABC):
+class IMemberRepository(BaseRepository):
     @abstractmethod
     async def add_member(self, group_id: uuid.UUID, user_id: uuid.UUID) -> MemberResponse:
         pass

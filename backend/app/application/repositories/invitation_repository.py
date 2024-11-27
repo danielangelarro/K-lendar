@@ -1,10 +1,12 @@
 import uuid
 from typing import List
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+
+from app.application.base_repository import BaseRepository
 
 
-class IInvitationRepository(ABC):
+class IInvitationRepository(BaseRepository):
     @abstractmethod
     async def invite_users(self, event_id: uuid.UUID, user_ids: List[uuid.UUID]) -> None:
         pass

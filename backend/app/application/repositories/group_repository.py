@@ -1,11 +1,12 @@
 import uuid
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from app.application.base_repository import BaseRepository
 from app.domain.models.schemma import GroupCreate
 from app.domain.models.schemma import GroupResponse
 
 
-class IGroupRepository(ABC):
+class IGroupRepository(BaseRepository):
     @abstractmethod
     async def create(self, group_create: GroupCreate) -> GroupResponse:
         pass

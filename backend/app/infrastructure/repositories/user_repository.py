@@ -1,7 +1,6 @@
 import uuid
 
 from app.application.repositories.user_repository import IUserRepository
-from app.application.base_repository import BaseRepository
 from app.domain.models.schemma import UserCreate
 from app.domain.models.schemma import UserResponse
 from app.infrastructure.sqlite.tables import User
@@ -11,7 +10,7 @@ from app.infrastructure.repositories.mapper import UserMapper
 from sqlalchemy.future import select
 
 
-class UserRepository(BaseRepository, IUserRepository):
+class UserRepository(IUserRepository):
     mapper = UserMapper()
 
     async def create(self, user_create: UserCreate) -> UserResponse:

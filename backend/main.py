@@ -8,6 +8,7 @@ from app.api.event_router import router as event_router
 from app.api.group_router import router as group_router
 from app.api.member_router import router as member_router
 from app.api.invitation_router import router as invitation_router
+from app.api.notification_router import router as notification_router
 from app.infrastructure.sqlite.tables import Base
 from app.infrastructure.sqlite.database import engine
 
@@ -29,6 +30,7 @@ app.include_router(event_router)
 app.include_router(group_router)
 app.include_router(member_router)
 app.include_router(invitation_router)
+app.include_router(notification_router)
 
 
 if __name__ == "__main__":

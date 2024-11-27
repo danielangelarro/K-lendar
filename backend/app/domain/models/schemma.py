@@ -87,3 +87,11 @@ class MemberCreate(BaseModelSchema):
 class MemberResponse(BaseModelSchema):
     user_id: uuid.UUID
     group_id: uuid.UUID
+
+
+class NotificationResponse(BaseModelSchema):
+    id: uuid.UUID
+    recipient: uuid.UUID
+    sender: uuid.UUID
+    event: uuid.UUID
+    is_read: bool
