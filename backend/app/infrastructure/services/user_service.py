@@ -5,8 +5,6 @@ from app.application.repositories.user_repository import IUserRepository
 from app.application.services.user_service import IUserService
 from app.domain.models.schemma import UserCreate
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 
 class UserService(IUserService):
     repo_instance: IUserRepository = inject.attr(IUserRepository)

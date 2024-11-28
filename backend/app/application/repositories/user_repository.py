@@ -1,12 +1,13 @@
 import uuid
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.base_repository import BaseRepository
 from app.domain.models.schemma import UserCreate
 
 
-class IUserRepository(ABC):
+class IUserRepository(BaseRepository):
     @abstractmethod
     async def create(self, user: UserCreate):
         pass

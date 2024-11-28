@@ -1,17 +1,16 @@
 import uuid
 
 from app.application.repositories.user_repository import IUserRepository
-from app.application.base_repository import BaseRepository
 from app.domain.models.schemma import UserCreate
 from app.domain.models.schemma import UserResponse
-from app.infrastructure.postgresql.tables import User
+from app.infrastructure.sqlite.tables import User
 from app.infrastructure.repositories.mapper import UserMapper
 
 
 from sqlalchemy.future import select
 
 
-class UserRepository(BaseRepository, IUserRepository):
+class UserRepository(IUserRepository):
     mapper = UserMapper()
 
     async def create(self, user_create: UserCreate) -> UserResponse:
@@ -24,7 +23,7 @@ class UserRepository(BaseRepository, IUserRepository):
 
     async def update(self, id: uuid.UUID, user_data: dict) -> UserResponse:
         db = await self.get_db()
-        user = await self.get_by_id(id)
+        user = await self.get_by_id(str(id))
         for key, value in user_data.items():
             setattr(user, key, value)
         await db.commit()
@@ -45,7 +44,7 @@ class UserRepository(BaseRepository, IUserRepository):
 
     async def delete(self, id: uuid.UUID):
         db = await self.get_db()
-        user = await self.get_by_id(id)
+        user = await self.get_by_id(str(id))
         if user:
             await db.delete(user)
             await db.commit()

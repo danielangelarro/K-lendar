@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.infrastructure.postgresql.database import get_db
+from app.infrastructure.sqlite.database import get_db
 
 
 class BaseMapper(ABC):
