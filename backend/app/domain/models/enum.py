@@ -3,7 +3,6 @@ from enum import Enum as PyEnum
 
 class UserRole(PyEnum):
     ADMIN = "admin"
-    USER = "user"
     GUEST = "guest"
 
 
@@ -17,3 +16,8 @@ class EventStatus(PyEnum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
+
+
+class InvitationStatus(PyEnum):
+    ACCEPTED = "Accepted"
+    DECLINED = "Declined"

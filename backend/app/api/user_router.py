@@ -5,28 +5,18 @@ import inject
 
 from app.application.services.user_service import IUserService
 from app.domain.models.schemma import UserCreate
+from app.domain.models.schemma import UserResponse
 from app.domain.models.enum import UserRole
 
 from pydantic import BaseModel
 from typing import List
 
 
-class UserCreate(BaseModel):
-    name: str
-    email: str
-    password: str
-
-
-class UserUpdate(BaseModel):
-    name: str = None
-    email: str = None
-    password: str = None
-    role: UserRole = None
-
-
 router = APIRouter()
+UserUpdate = UserCreate
 
-@router.post("/users/", response_model=UserCreate )
+
+@router.post("/users/", response_model=UserResponse )
 async def create_user(user_create: UserCreate):
     user_service: IUserService = inject.instance(IUserService)
     
@@ -34,7 +24,7 @@ async def create_user(user_create: UserCreate):
     return await user_service.create_user(user)
 
 
-@router.put("/users/{id}", response_model=UserCreate )
+@router.put("/users/{id}", response_model=UserResponse )
 async def update_user(id: int, user_update: UserUpdate):
     user_service: IUserService = inject.instance(IUserService)
     
@@ -45,7 +35,7 @@ async def update_user(id: int, user_update: UserUpdate):
     return updated_user
 
 
-@router.get("/users/{id}", response_model=UserCreate )
+@router.get("/users/{id}", response_model=UserResponse )
 async def get_user(id: int):
     user_service: IUserService = inject.instance(IUserService)
     
@@ -55,7 +45,7 @@ async def get_user(id: int):
     return user
 
 
-@router.get("/users/", response_model=List[UserCreate ])
+@router.get("/users/", response_model=List[ UserResponse ])
 async def get_all_users():
     user_service: IUserService = inject.instance(IUserService)
     
