@@ -1,9 +1,9 @@
+import uuid
 from enum import Enum as TypeEnum
 
 from sqlalchemy import Enum
 from sqlalchemy import Column
 from sqlalchemy import String
-from sqlalchemy import Integer
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy.sql import func
@@ -30,7 +30,7 @@ class TablesNames(TypeEnum):
 class SQLAlchemyBaseModel(Base):
     __abstract__ = True
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id = Column(String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -50,6 +50,7 @@ class User(SQLAlchemyBaseModel):
     sent_notifications = relationship('Notification', back_populates='sender_rel', foreign_keys='Notification.sender')
     received_notifications = relationship('Notification', back_populates='recipient_rel', foreign_keys='Notification.recipient')
     memberships = relationship('Member', back_populates='user_rel')
+    owned_groups = relationship('Group', back_populates='owner')
 
 
 class Event(SQLAlchemyBaseModel):
@@ -59,7 +60,7 @@ class Event(SQLAlchemyBaseModel):
     description = Column(String)
     start_datetime = Column(DateTime(timezone=True))
     end_datetime = Column(DateTime(timezone=True))
-    creator = Column(Integer, ForeignKey('users.id'), nullable=False)
+    creator = Column(String(36), ForeignKey('users.id'), nullable=False)
 
     creator_rel = relationship('User', back_populates='created_events')
     participations = relationship('UserEvent', back_populates='event_rel')
@@ -70,8 +71,10 @@ class Group(SQLAlchemyBaseModel):
     __tablename__ = TablesNames.GROUP.value
     
     group_name = Column(String(255))
-    parent_group = Column(Integer, ForeignKey('groups.id'))
+    owner_id = Column(String(36), ForeignKey('users.id'), nullable=False)  # Propietario del grupo
+    parent_group = Column(String(36), ForeignKey('groups.id'))
 
+    owner = relationship("User ", back_populates="owned_groups")
     subgroups = relationship('Group', backref='parent_group_rel', remote_side=[id])
     members = relationship('Member', back_populates='group_rel')
 
@@ -79,8 +82,8 @@ class Group(SQLAlchemyBaseModel):
 class UserEvent(SQLAlchemyBaseModel):
     __tablename__ = TablesNames.USER_EVENT.value
     
-    user_id = Column(Integer, ForeignKey('users.id'))
-    event_id = Column(Integer, ForeignKey('events.id'))
+    user_id = Column(String(36), ForeignKey('users.id'))
+    event_id = Column(String(36), ForeignKey('events.id'))
     status = Column(Enum('Accepted', 'Pending', 'Cancelled', name="status_enum"), default=EventStatus.PENDING)
 
     user_rel = relationship('User', back_populates='participations')
@@ -90,8 +93,8 @@ class UserEvent(SQLAlchemyBaseModel):
 class Member(SQLAlchemyBaseModel):
     __tablename__ = TablesNames.MEMBER.value
     
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    group_id = Column(Integer, ForeignKey('groups.id'), nullable=False)
+    user_id = Column(String(36), ForeignKey('users.id'), nullable=False)
+    group_id = Column(String(36), ForeignKey('groups.id'), nullable=False)
 
     user_rel = relationship('User', back_populates='memberships')
     group_rel = relationship('Group', back_populates='members')
@@ -100,9 +103,9 @@ class Member(SQLAlchemyBaseModel):
 class Notification(SQLAlchemyBaseModel):
     __tablename__ = TablesNames.NOTIFICATION.value
     
-    recipient = Column(Integer, ForeignKey('users.id'), nullable=False)
-    sender = Column(Integer, ForeignKey('users.id'), nullable=False)
-    event = Column(Integer, ForeignKey('events.id'), nullable=False)
+    recipient = Column(String(36), ForeignKey('users.id'), nullable=False)
+    sender = Column(String(36), ForeignKey('users.id'), nullable=False)
+    event = Column(String(36), ForeignKey('events.id'), nullable=False)
 
     recipient_rel = relationship('User', foreign_keys=[recipient], back_populates='received_notifications')
     sender_rel = relationship('User', foreign_keys=[sender], back_populates='sent_notifications')

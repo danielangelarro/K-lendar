@@ -19,13 +19,13 @@ class EventRepository(IEventRepository):
 
     async def get_by_id(self, event_id: uuid.UUID) -> EventResponse:
         db = await self.get_db()
-        result = await db.execute(select(Event).where(Event.id == event_id))
+        result = await db.execute(select(Event).where(Event.id == str(event_id)))
         event = result.scalars().first()
         return self.mapper.to_entity(event) if event else None
 
     async def update(self, event_id: uuid.UUID, event_data: EventCreate) -> EventResponse:
         db = await self.get_db()
-        event = await self.get_by_id(event_id)
+        event = await self.get_by_id(str(event_id))
         for key, value in event_data.dict().items():
             setattr(event, key, value)
         await db.commit()
@@ -34,7 +34,7 @@ class EventRepository(IEventRepository):
 
     async def delete(self, event_id: uuid.UUID):
         db = await self.get_db()
-        event = await self.get_by_id(event_id)
+        event = await self.get_by_id(str(event_id))
         if event:
             await db.delete(event)
             await db.commit()

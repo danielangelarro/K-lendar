@@ -15,7 +15,3 @@ class IAgendaRepository(BaseRepository):
     @abstractmethod
     async def get_group_agenda(self, group_id: uuid.UUID, start_date: datetime, end_date: datetime) -> List[UserAgendaResponse]:
         pass
-
-    @abstractmethod
-    def map_event_to_response(self, event) -> AgendaEventResponse:
-        pass

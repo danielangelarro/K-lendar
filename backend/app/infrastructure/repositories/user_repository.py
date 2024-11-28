@@ -23,7 +23,7 @@ class UserRepository(IUserRepository):
 
     async def update(self, id: uuid.UUID, user_data: dict) -> UserResponse:
         db = await self.get_db()
-        user = await self.get_by_id(id)
+        user = await self.get_by_id(str(id))
         for key, value in user_data.items():
             setattr(user, key, value)
         await db.commit()
@@ -44,7 +44,7 @@ class UserRepository(IUserRepository):
 
     async def delete(self, id: uuid.UUID):
         db = await self.get_db()
-        user = await self.get_by_id(id)
+        user = await self.get_by_id(str(id))
         if user:
             await db.delete(user)
             await db.commit()

@@ -11,7 +11,7 @@ class MemberRepository(IMemberRepository):
 
     async def add_member(self, group_id: uuid.UUID, user_id: int) -> MemberResponse:
         db = await self.get_db()
-        member = self.mapper.to_table(MemberCreate(user_id=user_id, group_id=group_id))
+        member = self.mapper.to_table(MemberCreate(user_id=str(user_id), group_id=str(group_id)))
         db.add(member)
         await db.commit()
         await db.refresh(member)
@@ -19,7 +19,7 @@ class MemberRepository(IMemberRepository):
 
     async def remove_member(self, group_id: uuid.UUID, user_id: int) -> bool:
         db = await self.get_db()
-        member = await db.execute(select(Member).where(Member.group_id == group_id, Member.user_id == user_id))
+        member = await db.execute(select(Member).where(Member.group_id == str(group_id), Member.user_id == str(user_id)))
         member_to_remove = member.scalars().first()
         if member_to_remove:
             await db.delete(member_to_remove)
