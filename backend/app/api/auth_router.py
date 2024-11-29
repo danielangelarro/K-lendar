@@ -18,13 +18,13 @@ from app.domain.models.schemma import Token
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/auth/signup", response_model=UserResponse)
 async def register(user: UserCreate):
     auth_service: IAuthService = inject.instance(IAuthService)
     return await auth_service.register_user(user)
 
 
-@router.post("/token", response_model=Token)
+@router.post("/auth/signin", response_model=Token)
 async def login(login_request: LoginRequest):
     auth_service: IAuthService = inject.instance(IAuthService)
 
