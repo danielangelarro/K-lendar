@@ -1,42 +1,39 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-const SelectGroupOne: React.FC = () => {
-  const [selectedOption, setSelectedOption] = useState<string>('');
+type props = {
+  value: string;
+  set: React.Dispatch<React.SetStateAction<string>>
+}
+
+const SelectGroupOne = ({value, set}: props) => {
   const [isOptionSelected, setIsOptionSelected] = useState<boolean>(false);
 
-  const changeTextColor = () => {
+  const changeTextColor = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    set(e.target.value)
     setIsOptionSelected(true);
   };
 
   return (
     <div className="mb-4.5">
-      <label className="mb-2.5 block text-black dark:text-white">
-        {' '}
-        Subject{' '}
-      </label>
-
       <div className="relative z-20 bg-transparent dark:bg-form-input">
         <select
-          value={selectedOption}
-          onChange={(e) => {
-            setSelectedOption(e.target.value);
-            changeTextColor();
-          }}
+          value={value}
+          onChange={(e) => changeTextColor(e)}
           className={`relative z-20 w-full appearance-none rounded border border-stroke bg-transparent py-3 px-5 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary ${
             isOptionSelected ? 'text-black dark:text-white' : ''
           }`}
         >
           <option value="" disabled className="text-body dark:text-bodydark">
-            Select your subject
+            Select Type
           </option>
-          <option value="USA" className="text-body dark:text-bodydark">
-            USA
+          <option value="personal" className="text-body dark:text-bodydark">
+            Personal
           </option>
-          <option value="UK" className="text-body dark:text-bodydark">
-            UK
+          <option value="group" className="text-body dark:text-bodydark">
+            Group
           </option>
-          <option value="Canada" className="text-body dark:text-bodydark">
-            Canada
+          <option value="pending" className="text-body dark:text-bodydark">
+            Pending
           </option>
         </select>
 
