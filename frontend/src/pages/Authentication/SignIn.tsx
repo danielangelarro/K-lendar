@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuthContext } from '../../context/AuthContext';
 import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
 import LogoDark from '../../images/logo/logo-dark.svg';
 import Logo from '../../images/logo/logo.svg';
@@ -9,14 +10,16 @@ const SignIn: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const { signIn } = useAuthContext();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
       const response = await api.post('/auth/signin', { username, password });
-      const { token } = response.data;
+      const { access_token, user } = response.data;
 
-      localStorage.setItem('authToken', token);
+      // window.localStorage.setItem('authToken', access_token);
+      signIn(access_token, user);
 
       // Redirigir al Dashboard o página deseada después de autenticación
       navigate('/');

@@ -32,6 +32,7 @@ class UserCreate(BaseModelSchema):
 class UserResponse(BaseModelSchema):
     username: str
     email: str
+    hashed_password: str
 
 
 class InviteUserRequest(BaseModelSchema):

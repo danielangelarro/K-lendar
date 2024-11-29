@@ -15,7 +15,7 @@ function useAuth() {
       const payloadBase64 = token.split('.')[1];
       const decodedPayload = JSON.parse(atob(payloadBase64));
       const exp = decodedPayload.exp;
-      
+
       if (Date.now() >= exp * 1000) {
         setToken(null);
         setUser(null);

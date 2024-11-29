@@ -21,6 +21,7 @@ Base = declarative_base()
 class TablesNames(TypeEnum):
     USER = "users"
     EVENT = "events"
+    GROUP_HIERARCHY = "group_hierarchy"
     GROUP = "groups"
     USER_EVENT = "user_event"
     MEMBER = "member"
@@ -67,16 +68,42 @@ class Event(SQLAlchemyBaseModel):
     notifications = relationship('Notification', back_populates='event_rel')
 
 
+class GroupHierarchy(SQLAlchemyBaseModel):
+    __tablename__ = TablesNames.GROUP_HIERARCHY.value
+
+    parent_group_id = Column(String(36), ForeignKey('groups.id'), primary_key=True)
+    child_group_id = Column(String(36), ForeignKey('groups.id'), primary_key=True)
+
+    parent_group = relationship(
+        'Group', 
+        foreign_keys=[parent_group_id], 
+        back_populates='parent_hierarchies'
+    )
+    child_group = relationship(
+        'Group', 
+        foreign_keys=[child_group_id], 
+        back_populates='child_hierarchies'
+    )
+
+
 class Group(SQLAlchemyBaseModel):
     __tablename__ = TablesNames.GROUP.value
     
     group_name = Column(String(255))
     owner_id = Column(String(36), ForeignKey('users.id'), nullable=False)  # Propietario del grupo
-    parent_group = Column(String(36), ForeignKey('groups.id'))
 
-    owner = relationship("User ", back_populates="owned_groups")
-    subgroups = relationship('Group', backref='parent_group_rel', remote_side=[id])
+    owner = relationship("User", back_populates="owned_groups")
     members = relationship('Member', back_populates='group_rel')
+    parent_hierarchies = relationship(
+        'GroupHierarchy', 
+        foreign_keys=[GroupHierarchy.parent_group_id], 
+        back_populates='parent_group'
+    )
+    child_hierarchies = relationship(
+        'GroupHierarchy', 
+        foreign_keys=[GroupHierarchy.child_group_id], 
+        back_populates='child_group'
+    )
 
 
 class UserEvent(SQLAlchemyBaseModel):
