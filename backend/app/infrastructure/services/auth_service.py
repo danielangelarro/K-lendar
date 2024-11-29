@@ -1,11 +1,13 @@
 import jwt
-from datetime import datetime
+import datetime
+import inject
+
 from fastapi import status
 from fastapi import Depends
 from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordBearer
+import jwt.utils
 from passlib.context import CryptContext
-import inject
 
 from app.application.repositories.user_repository import IUserRepository
 from app.application.services.auth_service import IAuthService
@@ -25,7 +27,7 @@ class AuthService(IAuthService):
         return await self.repo_instance.create(user)
 
     async def authenticate_user(self, login_request: LoginRequest) -> UserResponse:
-        user = await self.repo_instance.get_by_id(login_request.username)
+        user = await self.repo_instance.get_by_username(login_request.username)
         if not user or not self.verify_password(login_request.password, user.hashed_password):
             raise HTTPException(status_code=401, detail="Incorrect username or password")
         return user

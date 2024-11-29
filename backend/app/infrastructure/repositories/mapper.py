@@ -16,13 +16,14 @@ class UserMapper(BaseMapper):
         return User(
             username=user_create.username,
             email=user_create.email,
-            password_hash=user_create.password,
+            password=user_create.password,
         )
 
     def to_entity(self, user: User) -> UserResponse:
         return UserResponse(
             username=user.username,
             email=user.email,
+            hashed_password=user.password,
         )
 
 
