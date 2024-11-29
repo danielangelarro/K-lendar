@@ -10,8 +10,6 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
-from app.domain.models.enum import UserRole
-from app.domain.models.enum import EventType
 from app.domain.models.enum import EventStatus
 
 
@@ -111,7 +109,7 @@ class UserEvent(SQLAlchemyBaseModel):
     
     user_id = Column(String(36), ForeignKey('users.id'))
     event_id = Column(String(36), ForeignKey('events.id'))
-    status = Column(Enum('Accepted', 'Pending', 'Cancelled', name="status_enum"), default=EventStatus.PENDING)
+    status = Column(Enum('confirmed', 'pending', 'cancelled', name="status_enum"), default=EventStatus.PENDING)
 
     user_rel = relationship('User', back_populates='participations')
     event_rel = relationship('Event', back_populates='participations')

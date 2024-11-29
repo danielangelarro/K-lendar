@@ -26,14 +26,14 @@ const TaskForm = ({header, edit, old_task}: props) => {
 
   function create() {
     const task = {
-      id: old_task ? old_task.id : -1,
+      id: old_task ? old_task.id : null,
       title: title,
       description: description,
       status: status,
       start_time: startTime,
       end_time: endTime,
       event_type: eventType,
-      group: group, 
+      group_name: group, 
     }
 
     edit(task)

@@ -1,3 +1,4 @@
+from typing import List
 import uuid
 
 from abc import ABC, abstractmethod
@@ -12,6 +13,18 @@ class IEventService(ABC):
 
     @abstractmethod
     async def create_event(self, event: EventCreate) -> EventResponse:
+        pass
+
+    @abstractmethod
+    async def create_event_group(self, event: EventCreate) -> EventResponse:
+        pass
+
+    @abstractmethod
+    async def create_event_hierarchical(self, event: EventCreate) -> EventResponse:
+        pass
+
+    @abstractmethod
+    async def get_all_event(self, user_id: uuid.UUID) -> List[EventResponse]:
         pass
 
     @abstractmethod

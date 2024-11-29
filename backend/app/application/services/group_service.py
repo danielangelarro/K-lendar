@@ -14,13 +14,17 @@ class IGroupService(ABC):
         pass
 
     @abstractmethod
-    async def get_group(self, group_id: int) -> GroupResponse:
+    async def get_group(self, group_id: uuid.UUID) -> GroupResponse:
         pass
 
     @abstractmethod
-    async def update_group(self, group_id: int, group_data: GroupCreate) -> GroupResponse:
+    async def get_group_by_name(self, group_name: str) -> GroupResponse:
         pass
 
     @abstractmethod
-    async def delete_group(self, group_id: int):
+    async def update_group(self, group_id: uuid.UUID, group_data: GroupCreate) -> GroupResponse:
+        pass
+
+    @abstractmethod
+    async def delete_group(self, group_id: uuid.UUID):
         pass

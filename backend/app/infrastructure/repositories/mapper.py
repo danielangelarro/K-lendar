@@ -21,6 +21,7 @@ class UserMapper(BaseMapper):
 
     def to_entity(self, user: User) -> UserResponse:
         return UserResponse(
+            id=user.id,
             username=user.username,
             email=user.email,
             hashed_password=user.password,
@@ -35,7 +36,6 @@ class EventMapper(BaseMapper):
             start_datetime=event_create.start_time,
             end_datetime=event_create.end_time,
             creator=str(event_create.creator_id),
-            # group_id=event_create.group_id,
         )
 
     def to_entity(self, event: Event) -> EventResponse:
@@ -44,9 +44,7 @@ class EventMapper(BaseMapper):
             description=event.description,
             start_time=event.start_datetime,
             end_time=event.end_datetime,
-            event_type=event.event_type,
-            status=event.status,
-            creator=uuid.UUID(event.creator_rel),
+            creator=uuid.UUID(event.creator),
             group=None
         )
 
