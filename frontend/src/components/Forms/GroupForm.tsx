@@ -5,29 +5,31 @@ import CheckboxTwo from "../Checkboxes/CheckboxTwo";
 type props = {
   edit: any;
   header: string;
+  set: React.Dispatch<React.SetStateAction<boolean>>;
   old_group: Group | null;
   create_edit: boolean;
 }
 
-const GroupForm = ({old_group, header, edit, create_edit}: props) => {
-  const [ name, setName ] = useState<string>(create_edit ? old_group.name : '')
-  const [ description, setDescription ] = useState<string>(create_edit ? old_group.description : '')
-  const [ hierarchical, setHierarchical ] = useState<boolean>(create_edit ? old_group.is_hierarchical : false)
+const GroupForm = ({old_group, header, edit, set}: props) => {
+  const [ name, setName ] = useState<string>(old_group ? old_group.name : '')
+  const [ description, setDescription ] = useState<string>(old_group ? old_group.description : '')
+  const [ hierarchical, setHierarchical ] = useState<boolean>(old_group ? old_group.is_hierarchical : false)
 
   function create() {
     const group = {
+      id: old_group ? old_group.id : -1,
       id: create_edit ? old_group.id : null,
       name: name,
       description: description,
+      is_hierarchical: hierarchical,
     }
 
     edit(group)
   }
 
   return (
-      <div className="gap-9">
+    <div className="gap-9">
       <div className="flex flex-col gap-9">
-        {/* <!-- Contact Form --> */}
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
           <div className="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
             <h3 className="font-medium text-black dark:text-white">
@@ -43,7 +45,7 @@ const GroupForm = ({old_group, header, edit, create_edit}: props) => {
                   </label>
                   <input
                     type="text"
-                    placeholder="Title"
+                    placeholder="Name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
@@ -66,9 +68,14 @@ const GroupForm = ({old_group, header, edit, create_edit}: props) => {
                 <CheckboxTwo text="Hierarchical" value={hierarchical} set={setHierarchical}/>
               </div>
               
-              <button onClick={() => create()} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
-                {header}
-              </button>
+              <div className="grid grid-cols-2 w-full justify-center rounded p-3">
+                <button onClick={() => create()} className="flex justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
+                  {header}
+                </button>
+                <button onClick={() => set(false)} className="flex justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
+                  Cancel
+                </button>
+              </div>
             </div>
           </form>
         </div>

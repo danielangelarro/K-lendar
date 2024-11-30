@@ -4,6 +4,8 @@ import TableThree from '../components/Tables/TableThree';
 import Sucessfully from '../components/Alerts/Sucessfully';
 import TaskForm from '../components/Forms/TaskForm';
 import { Task } from '../types/task';
+
+import { isCollitionDateRanges, Range } from './Calendar';
 import api from '../api/axios'; // Asegúrate de importar tu configuración de axios
 import { useAuthContext } from '../context/AuthContext'; // Importa el contexto de autenticación
 
@@ -104,6 +106,15 @@ const TaskPage = () => {
     setModalEditTask(true);
   };
 
+  function filtrar(range: Range) {
+    setTasks(tasks.filter(task => 
+      isCollitionDateRanges({
+        start_time: task.start_time,
+        end_time: task.end_time,
+      }, range)
+    ))
+  }
+
   // Renderizado condicional con estado de carga
   if (isLoading) {
     return <div>Cargando tareas...</div>;
@@ -133,6 +144,7 @@ const TaskPage = () => {
         <div className="grid grid-cols-12 gap-4 md:gap-6 2xl:gap-7.5">
           <div className="col-span-12 xl:col-span-8">
             <TableThree 
+              filtrar={filtrar}
               del={del} 
               tasks={tasks} 
               edit={start_edit}

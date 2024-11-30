@@ -1,5 +1,34 @@
 import { useEffect, useState } from "react";
 
+export type Range = {
+    start_time: Date;
+    end_time: Date;
+}
+
+const timeData: Range[] = [
+    {
+      start_time: new Date(2024,10,7),
+      end_time: new Date(2024,11,7),
+    },
+    {
+      start_time: new Date(2024,10,27),
+      end_time: new Date(2024,11,4),
+    },
+    {
+      start_time: new Date(2024,10,6),
+      end_time: new Date(2024,11,6),
+    },
+    {
+      start_time: new Date(2024,10,9),
+      end_time: new Date(2024,11,11),
+    },
+  ];
+
+  export function isCollitionDateRanges(range1: Range, range2: Range): boolean {
+    if (range1.end_time < range2.start_time || range1.start_time >= range2.end_time ) return false;
+    return true;
+  }
+
 export default function component() {
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -19,6 +48,10 @@ export default function component() {
             });
         });
     },[month])
+
+    // const filteredEvents = taskData.filter(event => 
+    //   isDateInRange(event.start_time, new Date(year, month, 1), new Date(year, month + 1, 0))
+    // );
 
     function generateCalendar() {
         const calendarElement = document.getElementById('calendar');
@@ -42,9 +75,16 @@ export default function component() {
                 dayElement.className = 'text-center py-2 border cursor-pointer';
                 dayElement.id = `${day}`
                 dayElement.innerText = `${day}`;
-        
-                //dayElement.classList.add('bg-blue-500', 'text-white'); 
-        
+
+                timeData.map(range => {
+                    if (isCollitionDateRanges({
+                        start_time: new Date(year,month,day),
+                        end_time: new Date(year,month,day,23,59,59),
+                    }, range)) {
+                        dayElement.classList.add('bg-blue-500', 'text-white');
+                    }
+                })
+                
                 calendarElement.appendChild(dayElement);
             }
         }

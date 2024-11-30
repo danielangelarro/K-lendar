@@ -13,7 +13,6 @@ const GroupPage = () => {
     const [groupSelected, setGroupSelected] = useState<Group | null>(null);
     const [userModal, setUserModal] = useState<boolean>(false);
     const [modal, setModal] = useState<boolean>(false);
-    const [createEdit, setCreateEdit] = useState<boolean>(false);
     const [modalSuccessfully, setModalSuccessfully] = useState<boolean>(false);
     const [msgSuccessfully, setMsgSuccessfully] = useState<string>('');
 
@@ -115,7 +114,6 @@ const GroupPage = () => {
     };
 
     const clickCreate = () => {
-        setCreateEdit(false);
         setGroupSelected(null);
         setModal(true);
     };
@@ -132,7 +130,7 @@ const GroupPage = () => {
                 <TableOne back={setUserModal} userData={users.filter(user => groupSelected.members.includes(user.id))} del={delUserOfGroup} />
             )}  */}
             {modal && (
-                <GroupForm create_edit={createEdit} edit={endEditGroup} old_group={groupSelected} header={createEdit ? "Edit Group" : "Create Group"} />
+                <GroupForm edit={endEditGroup} old_group={groupSelected} header={groupSelected ? "Edit Group" : "Create Group"} />
             )}
             {!(userModal || modal) && (
                 <>
