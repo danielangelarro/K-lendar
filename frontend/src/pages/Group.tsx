@@ -2,144 +2,148 @@ import { useState, useEffect } from "react";
 import TableOne from "../components/Tables/TableOne";
 import TableTwo from "../components/Tables/TableTwo";
 import GroupForm from "../components/Forms/GroupForm";
-
+import api from '../api/axios'; // Asegúrate de importar tu configuración de axios
 import { User } from "../types/user";
 import { Group } from "../types/group";
-
-const userData: User[] = [
-    {
-      id: 0,
-      username: 'Paco',
-      email: 'Paco@random.com',
-    },
-    {
-      id: 1,
-      username: 'Carla',
-      email: 'Carla@random.com',
-    },
-    {
-      id: 2,
-      username: 'Juan',
-      email: 'Juan@random.com',
-    },
-    {
-      id: 3,
-      username: 'Petter',
-      email: 'Petter@random.com',
-    },
-    {
-      id: 4,
-      username: 'Ana',
-      email: 'Ana@random.com',
-    },
-  ];
-
-  const groupData: Group[] = [
-    {
-      id: 0,
-      name: 'jefatura',
-      description: 'Apple Watch Series 7',
-      owler: 0,
-      members: [0,1,2],
-      is_hierarchical: true,
-    },
-    {
-      id: 1,
-      name: 'sector 1',
-      description: 'Dell Inspiron 15',
-      owler: 1,
-      members: [1,3],
-      is_hierarchical: false,
-    },
-    {
-      id: 2,
-      name: 'sector 2',
-      description: 'HP Probook 450',
-      owler: 2,
-      members: [2,4],
-      is_hierarchical: false,
-    },
-  ];
+import Sucessfully from "../components/Alerts/Sucessfully";
 
 const GroupPage = () => {
-    const [ users, setUsers ] = useState<User[]>(userData)
-    const [ groupes, setGroupes ] = useState<Group[]>(groupData)
-    const [ groupSelected, setGroupSelected ] = useState<Group>(groupData[0])
-    const [ userModal, setUserModal ] = useState<boolean>(false)
-    const [ modal, setModal ] = useState<boolean>(false)
-    const [ createEdit, setCreateEdit ] = useState<boolean>(false)
+    const [users, setUsers] = useState<User[]>([]);
+    const [groupes, setGroupes] = useState<Group[]>([]);
+    const [groupSelected, setGroupSelected] = useState<Group | null>(null);
+    const [userModal, setUserModal] = useState<boolean>(false);
+    const [modal, setModal] = useState<boolean>(false);
+    const [createEdit, setCreateEdit] = useState<boolean>(false);
+    const [modalSuccessfully, setModalSuccessfully] = useState<boolean>(false);
+    const [msgSuccessfully, setMsgSuccessfully] = useState<string>('');
 
     useEffect(() => {
-      if (modal) setUserModal(false)
-    },[modal])
+        // Cargar usuarios y grupos al montar el componente
+        fetchGroups();
+        // fetchUsers();
+    }, []);
 
     useEffect(() => {
-      if (userModal) setModal(false)
-    },[userModal])
+        if (modal) setUserModal(false);
+    }, [modal]);
 
-    function startEditGroup(id: number) {
-      setGroupSelected(groupes.filter(group => group.id == id)[0])
-      setCreateEdit(true)
-      setModal(true)
-    }
+    useEffect(() => {
+        if (userModal) setModal(false);
+    }, [userModal]);
 
-    function vueUsersOfGroup(id: number) {
-      setGroupSelected(groupes.filter(group => group.id == id)[0])
-      setUserModal(true)
-    }
+    // Efecto para manejar el mensaje de éxito
+    useEffect(() => {
+      if (modalSuccessfully) setTimeout(() => setModalSuccessfully(false), 1500);
+    }, [modalSuccessfully]);
 
-    function delUserOfGroup(id: number) {
-      groupSelected.members.filter(users => users != id)
-    }
+    const fetchUsers = async () => {
+        try {
+            const response = await api.get('/users');
+            setUsers(response.data);
+        } catch (error) {
+            console.error('Error al obtener usuarios:', error);
+        }
+    };
 
-    function endEditGroup(group: Group) {
-      console.log('hacer peticion')
-    
-      if (group.id >= 0) {
-        const old_group = groupes.filter(_group_ => _group_.id == group.id)[0]
-        old_group.name = group.name
-        old_group.description = group.description
-        old_group.is_hierarchical = group.is_hierarchical
-      }
+    const fetchGroups = async () => {
+        try {
+            const response = await api.get('/groups/all');
+            setGroupes(response.data);
+        } catch (error) {
+            console.error('Error al obtener grupos:', error);
+        }
+    };
+
+    const del = async (id: string) => {
+      try {
+        await api.delete(`/groups/${id}`);
+        
+        // Actualizar estado local
+        const new_groups = groupes.filter(group => group.id !== id);
+        setGroupes(new_groups);
   
-      else {
-        groupes.push({
-          id: groupes.length,
-          name: group.name,
-          description: group.description,
-          is_hierarchical: group.is_hierarchical,
-          members: [],
-          owler: 0,
-        })
+        // Mostrar mensaje de éxito
+        setMsgSuccessfully("Grupo eliminado exitosamente");
+        setModalSuccessfully(true);
+      } catch (error) {
+        console.error('Error al eliminar grupo:', error);
+        setMsgSuccessfully("Error al eliminar grupo");
+        setModalSuccessfully(true);
       }
-  
-      setModal(false)
-    }
+    };
 
-    function clickCreate() {
-      setCreateEdit(false)
-      setModal(true)
-      console.log(modal)
-    }
+    const startEditGroup = (id: string) => {
+        const group = groupes.find(group => group.id === id);
+        if (group) {
+            setGroupSelected(group);
+            setCreateEdit(true);
+            setModal(true);
+        }
+    };
+
+    const vueUsersOfGroup = (id: string) => {
+        const group = groupes.find(group => group.id === id);
+        if (group) {
+            setGroupSelected(group);
+            setUserModal(true);
+        }
+    };
+
+    const delUserOfGroup = (id: string) => {
+        // Implementar lógica para eliminar usuario del grupo
+        // const updatedMembers = groupSelected?.members.filter(userId => userId !== id);
+        // if (updatedMembers) {
+        //     setGroupSelected(updatedMembers);
+        // }
+    };
+
+    const endEditGroup = async (group: Group) => {
+        try {
+            if (group.id) {
+                // Editar grupo existente
+                const response = await api.put(`/groups/${group.id}`, group); // Cambia la URL según tu API
+                setGroupes(groupes.map(g => (g.id === group.id ? response.data : g)));
+            } else {
+                // Crear nuevo grupo
+                const response = await api.post('/groups', group); // Cambia la URL según tu API
+                setGroupes([...groupes, response.data]);
+            }
+            setModal(false);
+        } catch (error) {
+            console.error('Error al guardar grupo:', error);
+        }
+    };
+
+    const clickCreate = () => {
+        setCreateEdit(false);
+        setGroupSelected(null);
+        setModal(true);
+    };
 
     return (
         <>
-            {userModal && groupSelected && (
-              <TableOne back={setUserModal} userData={users.filter(user => user.id in groupSelected.members)} del={delUserOfGroup}/>
+            {modalSuccessfully && (
+              <div className=''>
+                <Sucessfully msg={msgSuccessfully}/>
+              </div>
             )}
-            {modal && groupSelected && (
-              <GroupForm create_edit={createEdit} edit={endEditGroup} old_group={groupSelected} header={createEdit ? "Edit Group" : "Create Group"} />
+
+            {/* {userModal && groupSelected && (
+                <TableOne back={setUserModal} userData={users.filter(user => groupSelected.members.includes(user.id))} del={delUserOfGroup} />
+            )}  */}
+            {modal && (
+                <GroupForm create_edit={createEdit} edit={endEditGroup} old_group={groupSelected} header={createEdit ? "Edit Group" : "Create Group"} />
             )}
             {!(userModal || modal) && (
-              <>
-                <TableTwo groupData={groupes} edit={startEditGroup} vueUsersOfGroup={vueUsersOfGroup} />
-                <button onClick={() => clickCreate()} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
-                  New Group
-                </button>
-              </>
+                <>
+                    <TableTwo groupes={groupes} edit={startEditGroup} del={del} vueUsersOfGroup={vueUsersOfGroup} />
+                    <button onClick={clickCreate} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
+                        New Group
+                    </button>
+                </>
             )}
         </>
-    )
+    );
 }
 
 export default GroupPage;

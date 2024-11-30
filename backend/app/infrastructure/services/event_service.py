@@ -44,6 +44,9 @@ class EventService(IEventService):
 
         created_event = await self.repo_instance.create(event)
 
+        for member in group_members:
+            await self.repo_instance.asign_event(str(event.id), member.user_id)
+
         # Enviamos notificaciones a todos los miembros del grupo
         notification_response = await self.notification_service.send_event_notification(
             event.group_id, created_event.id)
@@ -81,14 +84,14 @@ class EventService(IEventService):
 
         return created_event
 
-    async def get_event(self, event_id: int) -> EventResponse:
+    async def get_event(self, event_id: uuid.UUID) -> EventResponse:
         return await self.repo_instance.get_by_id(event_id)
     
     async def get_all_event(self, user_id: uuid.UUID) -> List[EventResponse]:
         return await self.repo_instance.get_by_user_id(user_id)
 
-    async def update_event(self, event_id: int, event_data: EventCreate) -> EventResponse:
+    async def update_event(self, event_id: uuid.UUID, event_data: EventCreate) -> EventResponse:
         return await self.repo_instance.update(event_id, event_data)
 
-    async def delete_event(self, event_id: int):
+    async def delete_event(self, event_id: uuid.UUID):
         await self.repo_instance.delete(event_id)

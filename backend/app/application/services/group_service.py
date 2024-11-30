@@ -1,8 +1,9 @@
+from typing import List
 import uuid
 
 from abc import ABC, abstractmethod
 from app.application.base_repository import BaseRepository
-from app.domain.models.schemma import GroupCreate
+from app.domain.models.schemma import GroupCreate, UserResponse
 from app.domain.models.schemma import GroupResponse
 
 
@@ -11,6 +12,10 @@ class IGroupService(ABC):
 
     @abstractmethod
     async def create_group(self, group: GroupCreate) -> GroupResponse:
+        pass
+
+    @abstractmethod
+    async def get_group_all(self, user: UserResponse) -> List[GroupResponse]:
         pass
 
     @abstractmethod

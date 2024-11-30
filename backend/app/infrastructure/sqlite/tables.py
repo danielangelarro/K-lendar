@@ -59,8 +59,9 @@ class Event(SQLAlchemyBaseModel):
     description = Column(String)
     start_datetime = Column(DateTime(timezone=True))
     end_datetime = Column(DateTime(timezone=True))
+    event_type = Column(Enum("personal", "group", "hierarchical", name="event_type"), default="personal")
     creator = Column(String(36), ForeignKey('users.id'), nullable=False)
-
+    
     creator_rel = relationship('User', back_populates='created_events')
     participations = relationship('UserEvent', back_populates='event_rel')
     notifications = relationship('Notification', back_populates='event_rel')
@@ -88,7 +89,8 @@ class Group(SQLAlchemyBaseModel):
     __tablename__ = TablesNames.GROUP.value
     
     group_name = Column(String(255))
-    owner_id = Column(String(36), ForeignKey('users.id'), nullable=False)  # Propietario del grupo
+    description = Column(String(500))
+    owner_id = Column(String(36), ForeignKey('users.id'), nullable=False)
 
     owner = relationship("User", back_populates="owned_groups")
     members = relationship('Member', back_populates='group_rel')

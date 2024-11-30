@@ -28,13 +28,13 @@ class IEventService(ABC):
         pass
 
     @abstractmethod
-    async def get_event(self, event_id: int) -> EventResponse:
+    async def get_event(self, event_id: uuid.UUID) -> EventResponse:
         pass
 
     @abstractmethod
-    async def update_event(self, event_id: int, event_data: EventCreate) -> EventResponse:
+    async def update_event(self, event_id: uuid.UUID, event_data: EventCreate) -> EventResponse:
         pass
 
     @abstractmethod
-    async def delete_event(self, event_id: int):
+    async def delete_event(self, event_id: uuid.UUID):
         pass

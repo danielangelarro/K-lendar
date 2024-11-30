@@ -42,7 +42,7 @@ const TaskPage = () => {
   };
 
   // Eliminar tarea
-  const del = async (id: number) => {
+  const del = async (id: string) => {
     try {
       await api.delete(`/events/${id}`);
       
@@ -61,7 +61,7 @@ const TaskPage = () => {
   };
 
   // Iniciar edición de tarea
-  const start_edit = (id: number) => {
+  const start_edit = (id: string) => {
     const task = tasks.find(tarea => tarea.id === id);
     setSelectedTask(task);
     setModalEditTask(true);

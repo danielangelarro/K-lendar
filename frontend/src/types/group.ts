@@ -1,8 +1,7 @@
 export type Group = {
-    id: number;
+    id: string;
     name: string;
     description: string;
-    is_hierarchical: boolean;
-    owler: number,
-    members: number[]
+    cant_members: number;
+    owner_username: string,
 }

@@ -12,6 +12,10 @@ class IEventRepository(BaseRepository):
         pass
 
     @abstractmethod
+    async def asign_event(self, event_id: str, user_id: str) -> None:
+        pass
+
+    @abstractmethod
     async def update(self, event_id: uuid.UUID, event_data: EventCreate) -> EventResponse:
         pass
 

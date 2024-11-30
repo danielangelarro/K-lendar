@@ -48,14 +48,15 @@ class AcceptDeclineResponse(BaseModelSchema):
 class GroupCreate(BaseModelSchema):
     name: str
     description: Optional[str] = None
+    owner: Optional[UserResponse] = None
     is_hierarchical: bool = False
 
 
 class GroupResponse(BaseModelSchema):
     name: str
+    owner_username: Optional[str] = ""
+    cant_members: Optional[int] = 0
     description: Optional[str]
-    is_hierarchical: bool
-    members: List[UserResponse] = []
 
 
 class EventCreate(BaseModelSchema):
@@ -64,15 +65,16 @@ class EventCreate(BaseModelSchema):
     status: str
     start_time: datetime
     end_time: datetime
+    event_type: EventType = EventType.PERSONAL
     creator_id: Optional[uuid.UUID] = None
     group_id: Optional[uuid.UUID] = None
     invitees: List[uuid.UUID] = []
 
 
 class EventRequest(BaseModel):
-    id: Optional[uuid.UUID] = None
+    id: Optional[str] = None
     title: str
-    description: Optional[str] = None
+    description: Optional[str] = ""
     status: str
     event_type: EventType
     start_time: datetime
@@ -86,6 +88,7 @@ class EventResponse(BaseModelSchema):
     start_time: datetime
     end_time: datetime
     status: Optional[EventStatus] = None
+    event_type: EventType = EventType.PERSONAL
     creator: uuid.UUID
     group: Optional[GroupResponse] = None
 
