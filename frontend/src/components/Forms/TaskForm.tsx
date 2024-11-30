@@ -9,9 +9,10 @@ type props = {
   header: string;
   edit: any;
   old_task: Task | undefined;
+  set: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const TaskForm = ({header, edit, old_task}: props) => {
+const TaskForm = ({header, edit, old_task, set}: props) => {
   const [ title, setTitle ] = useState<string>(old_task ? old_task.title : '')
   const [ description, setDescription ] = useState<string>(old_task ? old_task.description : '')
   const [ status, setStatus ] = useState<string>(old_task ? old_task.status : '')
@@ -117,9 +118,14 @@ const TaskForm = ({header, edit, old_task}: props) => {
                 </div>
               )}
               
-              <button onClick={() => create()} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
-                {header}
-              </button>
+              <div className="grid grid-cols-2 w-full justify-center rounded p-3">
+                <button onClick={() => create()} className="flex justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
+                  {header}
+                </button>
+                <button onClick={() => set(false)} className="flex justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
+                  Cancel
+                </button>
+              </div>
             </div>
           </form>
         </div>

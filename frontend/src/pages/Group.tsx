@@ -64,10 +64,9 @@ const userData: User[] = [
 const GroupPage = () => {
     const [ users, setUsers ] = useState<User[]>(userData)
     const [ groupes, setGroupes ] = useState<Group[]>(groupData)
-    const [ groupSelected, setGroupSelected ] = useState<Group>(groupData[0])
+    const [ groupSelected, setGroupSelected ] = useState<Group | undefined>(undefined)
     const [ userModal, setUserModal ] = useState<boolean>(false)
     const [ modal, setModal ] = useState<boolean>(false)
-    const [ createEdit, setCreateEdit ] = useState<boolean>(false)
 
     useEffect(() => {
       if (modal) setUserModal(false)
@@ -79,8 +78,11 @@ const GroupPage = () => {
 
     function startEditGroup(id: number) {
       setGroupSelected(groupes.filter(group => group.id == id)[0])
-      setCreateEdit(true)
       setModal(true)
+    }
+
+    function delGroup(id: number) {
+      setGroupes(groupes.filter(group => group.id != id))
     }
 
     function vueUsersOfGroup(id: number) {
@@ -89,7 +91,7 @@ const GroupPage = () => {
     }
 
     function delUserOfGroup(id: number) {
-      groupSelected.members.filter(users => users != id)
+      groupSelected?.members.filter(users => users != id)
     }
 
     function endEditGroup(group: Group) {
@@ -117,9 +119,8 @@ const GroupPage = () => {
     }
 
     function clickCreate() {
-      setCreateEdit(false)
+      setGroupSelected(undefined)
       setModal(true)
-      console.log(modal)
     }
 
     return (
@@ -127,12 +128,12 @@ const GroupPage = () => {
             {userModal && groupSelected && (
               <TableOne back={setUserModal} userData={users.filter(user => user.id in groupSelected.members)} del={delUserOfGroup}/>
             )}
-            {modal && groupSelected && (
-              <GroupForm create_edit={createEdit} edit={endEditGroup} old_group={groupSelected} header={createEdit ? "Edit Group" : "Create Group"} />
+            {modal && (
+              <GroupForm set={setModal} edit={endEditGroup} old_group={groupSelected} header={groupSelected ? "Edit Group" : "Create Group"} />
             )}
             {!(userModal || modal) && (
               <>
-                <TableTwo groupData={groupes} edit={startEditGroup} vueUsersOfGroup={vueUsersOfGroup} />
+                <TableTwo del={delGroup} groupData={groupes} edit={startEditGroup} vueUsersOfGroup={vueUsersOfGroup} />
                 <button onClick={() => clickCreate()} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
                   New Group
                 </button>
