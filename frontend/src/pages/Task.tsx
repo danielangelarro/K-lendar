@@ -8,7 +8,7 @@ import TableThree from '../components/Tables/TableThree';
 import Sucessfully from '../components/Alerts/Sucessfully';
 import TaskForm from '../components/Forms/TaskForm';
 import { Task } from '../types/task';
-// import { isCollitionDateRanges, Range } from './Calendar';
+import { isCollitionDateRanges, Range } from './Calendar';
 
 const taskData: Task[] = [
   {
@@ -112,14 +112,14 @@ const TaskPage = () => {
     setModalEditTask(false)
   }
 
-  // function filtrar(range: Range) {
-  //   setTasks(tasks.filter(task => 
-  //     isCollitionDateRanges({
-  //       start_time: task.start_time,
-  //       end_time: task.end_time,
-  //     }, range)
-  //   ))
-  // }
+  function filtrar(range: Range) {
+    setTasks(tasks.filter(task => 
+      isCollitionDateRanges({
+        start_time: task.start_time,
+        end_time: task.end_time,
+      }, range)
+    ))
+  }
 
   function clickCreate() {
     setSelectedTask(undefined)
@@ -144,7 +144,7 @@ const TaskPage = () => {
       {!modalEditTask && (
         <div className="grid grid-cols-12 gap-4 md:gap-6 2xl:gap-7.5">
           <div className="col-span-12 xl:col-span-8">
-            <TableThree del={del} tasks={tasks} edit={start_edit}/>{/* filtrar={filtrar} */}
+            <TableThree filtrar={filtrar} del={del} tasks={tasks} edit={start_edit}/>
             <button onClick={() => clickCreate()} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
               New Task
             </button>
