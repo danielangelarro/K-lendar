@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 
 export default function component() {
-    const currentDate = new Date();
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const [ month, setMonth ] = useState<number>(currentDate.getMonth())
-    const [ year, setYear ] = useState<number>(currentDate.getFullYear())
+    const [ selectedDate, setSelectedDate ] = useState<Date>(new Date());
+    const [ month, setMonth ] = useState<number>(selectedDate.getMonth())
+    const [ year, setYear ] = useState<number>(selectedDate.getFullYear())
     const [ modal, setModal ] = useState<boolean>(false)
 
     useEffect(() => {
@@ -14,8 +14,8 @@ export default function component() {
         dayElements.forEach(dayElement => {
             dayElement.addEventListener('click', () => {
                 const day = parseInt(dayElement.id);
-                const selectedDate = new Date(year, month, day);
-                showModal(selectedDate.toDateString());
+                setSelectedDate(new Date(year, month, day));
+                setModal(true)
             });
         });
     },[month])
@@ -66,12 +66,6 @@ export default function component() {
         }
     }
     
-    function showModal(selectedDate: string) {
-        setModal(true)
-        const modalDateElement = document.getElementById('modalDate');
-        if (modalDateElement) modalDateElement.innerText = selectedDate;
-    }
-    
     return (
         <div className="bg-gray-100 flex items-center justify-center h-screen">
             <div className="lg:w-7/12 md:w-9/12 sm:w-10/12 mx-auto p-4">
@@ -103,7 +97,9 @@ export default function component() {
                                     <p className="text-2xl font-bold">Selected Date</p>
                                     <button id="closeModal" onClick={() => setModal(false)} className="modal-close px-3 py-1 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring">✕</button>
                                 </div>
-                                <div id="modalDate" className="text-xl font-semibold"></div>
+                                <div id="modalDate" className="text-xl font-semibold">
+                                    {selectedDate.toDateString()}
+                                </div>
                                 </div>
                             </div>
                         </div>
