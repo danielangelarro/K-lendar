@@ -5,7 +5,7 @@ import CheckboxTwo from "../Checkboxes/CheckboxTwo";
 type props = {
   edit: any;
   header: string;
-  old_group: Group;
+  old_group: Group | null;
   create_edit: boolean;
 }
 
@@ -16,7 +16,7 @@ const GroupForm = ({old_group, header, edit, create_edit}: props) => {
 
   function create() {
     const group = {
-      id: create_edit ? old_group.id : -1,
+      id: create_edit ? old_group.id : null,
       name: name,
       description: description,
     }

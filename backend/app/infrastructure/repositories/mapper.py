@@ -1,3 +1,4 @@
+from typing import List
 import uuid
 from app.application.base_repository import BaseMapper
 from app.domain.models.enum import EventStatus
@@ -58,8 +59,7 @@ class GroupMapper(BaseMapper):
         return Group(
             group_name=group_create.name,
             description=group_create.description,
-            is_hierarchical=group_create.is_hierarchical,
-            parent_group=None
+            owner_id=str(group_create.owner.id),
         )
 
     def to_entity(self, group: Group) -> GroupResponse:
@@ -67,8 +67,6 @@ class GroupMapper(BaseMapper):
             id=uuid.UUID(group.id),
             name=group.group_name,
             description=group.description,
-            is_hierarchical=False,
-            members=[]
         )
 
 

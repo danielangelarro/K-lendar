@@ -48,14 +48,15 @@ class AcceptDeclineResponse(BaseModelSchema):
 class GroupCreate(BaseModelSchema):
     name: str
     description: Optional[str] = None
+    owner: Optional[UserResponse] = None
     is_hierarchical: bool = False
 
 
 class GroupResponse(BaseModelSchema):
     name: str
+    owner_username: Optional[str] = ""
+    cant_members: Optional[int] = 0
     description: Optional[str]
-    is_hierarchical: bool
-    members: List[UserResponse] = []
 
 
 class EventCreate(BaseModelSchema):
