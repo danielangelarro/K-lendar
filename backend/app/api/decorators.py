@@ -9,7 +9,7 @@ def require_authentication(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
         request: Request = kwargs.get('request') or args[0]        
-        token = request.headers.get("Authorization")
+        token = request.headers.get("Authorization").split(" ")[1]
 
         if token is None:
             raise HTTPException(status_code=401, detail="Not authenticated")

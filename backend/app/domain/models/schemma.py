@@ -3,7 +3,7 @@ import uuid
 from typing import List
 from typing import Optional
 from datetime import datetime
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
 from pydantic import BaseModel as PydanticBaseModel
 
 from app.domain.models.enum import UserRole
@@ -48,25 +48,38 @@ class AcceptDeclineResponse(BaseModelSchema):
 class GroupCreate(BaseModelSchema):
     name: str
     description: Optional[str] = None
+    owner: Optional[UserResponse] = None
     is_hierarchical: bool = False
 
 
 class GroupResponse(BaseModelSchema):
     name: str
+    owner_username: Optional[str] = ""
+    cant_members: Optional[int] = 0
     description: Optional[str]
-    is_hierarchical: bool
-    members: List[UserResponse] = []
 
 
 class EventCreate(BaseModelSchema):
     title: str
     description: Optional[str] = None
+    status: str
     start_time: datetime
     end_time: datetime
-    event_type: EventType
-    creator_id: uuid.UUID
+    event_type: EventType = EventType.PERSONAL
+    creator_id: Optional[uuid.UUID] = None
     group_id: Optional[uuid.UUID] = None
     invitees: List[uuid.UUID] = []
+
+
+class EventRequest(BaseModel):
+    id: Optional[str] = None
+    title: str
+    description: Optional[str] = ""
+    status: str
+    event_type: EventType
+    start_time: datetime
+    end_time: datetime
+    group_name: Optional[str] = None
 
 
 class EventResponse(BaseModelSchema):
@@ -74,9 +87,9 @@ class EventResponse(BaseModelSchema):
     description: Optional[str]
     start_time: datetime
     end_time: datetime
-    event_type: EventType
-    status: EventStatus
-    creator: UserResponse
+    status: Optional[EventStatus] = None
+    event_type: EventType = EventType.PERSONAL
+    creator: uuid.UUID
     group: Optional[GroupResponse] = None
 
 

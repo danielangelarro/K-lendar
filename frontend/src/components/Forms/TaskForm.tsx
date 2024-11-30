@@ -16,8 +16,8 @@ const TaskForm = ({header, edit, old_task, set}: props) => {
   const [ title, setTitle ] = useState<string>(old_task ? old_task.title : '')
   const [ description, setDescription ] = useState<string>(old_task ? old_task.description : '')
   const [ status, setStatus ] = useState<string>(old_task ? old_task.status : '')
-  const [ startTime, setStartTime ] = useState<Date>(old_task ? old_task.start_time : new Date())
-  const [ endTime, setEndTime ] = useState<Date>(old_task ? old_task.end_time : new Date())
+  const [ startTime, setStartTime ] = useState<Date>(old_task ? new Date(old_task.start_time) : new Date())
+  const [ endTime, setEndTime ] = useState<Date>(old_task ? new Date(old_task.end_time) : new Date())
   const [ eventType, setEventType ] = useState<string>(old_task ? old_task.event_type : '')
   const [ group, setGroup ] = useState<string>(old_task ? old_task.group : '')
 
@@ -27,14 +27,14 @@ const TaskForm = ({header, edit, old_task, set}: props) => {
 
   function create() {
     const task = {
-      id: old_task ? old_task.id : -1,
+      id: old_task ? old_task.id : null,
       title: title,
       description: description,
       status: status,
       start_time: startTime,
       end_time: endTime,
       event_type: eventType,
-      group: group, 
+      group_name: group, 
     }
 
     edit(task)

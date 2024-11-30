@@ -5,8 +5,9 @@ import CheckboxTwo from "../Checkboxes/CheckboxTwo";
 type props = {
   edit: any;
   header: string;
-  old_group: Group | undefined;
   set: React.Dispatch<React.SetStateAction<boolean>>;
+  old_group: Group | null;
+  create_edit: boolean;
 }
 
 const GroupForm = ({old_group, header, edit, set}: props) => {
@@ -17,6 +18,7 @@ const GroupForm = ({old_group, header, edit, set}: props) => {
   function create() {
     const group = {
       id: old_group ? old_group.id : -1,
+      id: create_edit ? old_group.id : null,
       name: name,
       description: description,
       is_hierarchical: hierarchical,

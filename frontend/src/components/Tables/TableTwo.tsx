@@ -3,32 +3,31 @@ import { Group } from '../../types/group';
 // import GroupForm from '../Forms/GroupForm'
 
 type props = {
-  groupData: Group[];
+  groupes: Group[];
   edit: any;
+  del: any,
   vueUsersOfGroup: any;
 }
 
-const TableTwo = ({groupData, edit, vueUsersOfGroup}: props) => {
-  const [ groupes, setGroupes ] = useState<Group[]>(groupData)
-  
-  function del(id: number) {
-    setGroupes(groupes.filter(group => group.id != id))
-  }
+const TableTwo = ({groupes, edit, del, vueUsersOfGroup}: props) => {
 
   return (
     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
       <div className="py-6 px-4 md:px-6 xl:px-7.5">
         <h4 className="text-xl font-semibold text-black dark:text-white">
-          Groupes Conocidos
+          My Groups
         </h4>
       </div>
 
-      <div className="grid grid-cols-4 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
+      <div className="grid grid-cols-5 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
         <div className="col-span-1 flex items-center">
           <p className="font-medium">Name</p>
         </div>
+        <div className="col-span-1 flex items-center">
+          <p className="font-medium">Description</p>
+        </div>
         <div className="col-span-1 hidden items-center sm:flex">
-          <p className="font-medium">Owler</p>
+          <p className="font-medium">Owner</p>
         </div>
         <div className="col-span-1 flex items-center">
           <p className="font-medium">Members</p>
@@ -40,7 +39,7 @@ const TableTwo = ({groupData, edit, vueUsersOfGroup}: props) => {
 
       {groupes.map((group, key) => (
         <div
-          className="grid grid-cols-4 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
+          className="grid grid-cols-5 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
           key={key}
         >
           <div className="col-span-1 flex items-center">
@@ -50,14 +49,23 @@ const TableTwo = ({groupData, edit, vueUsersOfGroup}: props) => {
               </p>
             </div>
           </div>
+          <div className="col-span-1 flex items-center">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <p className="text-sm text-black dark:text-white">
+                {group.description}
+              </p>
+            </div>
+          </div>
           <div className="col-span-1 hidden items-center sm:flex">
             <p className="text-sm text-black dark:text-white">
-              {group.owler}
+              {group.owner_username}
             </p>
           </div>
           <div className="col-span-1 flex items-center">
             <p className="text-sm text-black dark:text-white">
-              <span onClick={() => vueUsersOfGroup(group.id)} className='cursor-pointer border-stroke dark:border-strokedark'>...</span>
+              <span onClick={() => vueUsersOfGroup(group.id)} className='cursor-pointer border-stroke dark:border-strokedark'>
+                {group.cant_members}
+              </span>
             </p>
           </div>
           <div className="col-span-1 flex items-center">

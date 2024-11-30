@@ -1,8 +1,9 @@
+from typing import List
 import uuid
 
 from abc import abstractmethod
 from app.application.base_repository import BaseRepository
-from app.domain.models.schemma import GroupCreate
+from app.domain.models.schemma import GroupCreate, UserResponse
 from app.domain.models.schemma import GroupResponse
 
 
@@ -13,6 +14,14 @@ class IGroupRepository(BaseRepository):
 
     @abstractmethod
     async def get_by_id(self, group_id: uuid.UUID) -> GroupResponse:
+        pass
+
+    @abstractmethod
+    async def get_by_user(self, user: UserResponse) -> List[GroupResponse]:
+        pass
+
+    @abstractmethod
+    async def get_by_name(self, group_id: uuid.UUID) -> GroupResponse:
         pass
 
     @abstractmethod

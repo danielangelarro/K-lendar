@@ -10,8 +10,6 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
-from app.domain.models.enum import UserRole
-from app.domain.models.enum import EventType
 from app.domain.models.enum import EventStatus
 
 
@@ -61,8 +59,9 @@ class Event(SQLAlchemyBaseModel):
     description = Column(String)
     start_datetime = Column(DateTime(timezone=True))
     end_datetime = Column(DateTime(timezone=True))
+    event_type = Column(Enum("personal", "group", "hierarchical", name="event_type"), default="personal")
     creator = Column(String(36), ForeignKey('users.id'), nullable=False)
-
+    
     creator_rel = relationship('User', back_populates='created_events')
     participations = relationship('UserEvent', back_populates='event_rel')
     notifications = relationship('Notification', back_populates='event_rel')
@@ -90,7 +89,8 @@ class Group(SQLAlchemyBaseModel):
     __tablename__ = TablesNames.GROUP.value
     
     group_name = Column(String(255))
-    owner_id = Column(String(36), ForeignKey('users.id'), nullable=False)  # Propietario del grupo
+    description = Column(String(500))
+    owner_id = Column(String(36), ForeignKey('users.id'), nullable=False)
 
     owner = relationship("User", back_populates="owned_groups")
     members = relationship('Member', back_populates='group_rel')
@@ -111,7 +111,7 @@ class UserEvent(SQLAlchemyBaseModel):
     
     user_id = Column(String(36), ForeignKey('users.id'))
     event_id = Column(String(36), ForeignKey('events.id'))
-    status = Column(Enum('Accepted', 'Pending', 'Cancelled', name="status_enum"), default=EventStatus.PENDING)
+    status = Column(Enum('confirmed', 'pending', 'cancelled', name="status_enum"), default=EventStatus.PENDING)
 
     user_rel = relationship('User', back_populates='participations')
     event_rel = relationship('Event', back_populates='participations')
