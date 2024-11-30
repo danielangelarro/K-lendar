@@ -3,6 +3,7 @@ from typing import List
 
 from abc import ABC, abstractmethod
 from app.application.base_repository import BaseRepository
+from app.domain.models.schemma import UserResponse
 
 
 class IMemberService(ABC):
@@ -10,6 +11,10 @@ class IMemberService(ABC):
 
     @abstractmethod
     async def add_member(self, group_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+        pass
+
+    @abstractmethod
+    async def get_members(self, group_id: uuid.UUID) -> List[UserResponse]:
         pass
 
     @abstractmethod

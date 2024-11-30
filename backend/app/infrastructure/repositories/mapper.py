@@ -1,5 +1,6 @@
 import uuid
 from app.application.base_repository import BaseMapper
+from app.domain.models.enum import EventStatus
 from app.domain.models.schemma import AgendaEventResponse, MemberCreate, MemberResponse, NotificationResponse, UserCreate
 from app.domain.models.schemma import UserResponse
 from app.domain.models.schemma import EventCreate
@@ -35,15 +36,18 @@ class EventMapper(BaseMapper):
             description=event_create.description,
             start_datetime=event_create.start_time,
             end_datetime=event_create.end_time,
+            event_type=event_create.event_type.value,
             creator=str(event_create.creator_id),
         )
 
     def to_entity(self, event: Event) -> EventResponse:
         return EventResponse(
+            id=event.id,
             title=event.title,
             description=event.description,
             start_time=event.start_datetime,
             end_time=event.end_datetime,
+            event_type=event.event_type,
             creator=uuid.UUID(event.creator),
             group=None
         )

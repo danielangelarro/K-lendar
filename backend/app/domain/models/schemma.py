@@ -64,15 +64,16 @@ class EventCreate(BaseModelSchema):
     status: str
     start_time: datetime
     end_time: datetime
+    event_type: EventType = EventType.PERSONAL
     creator_id: Optional[uuid.UUID] = None
     group_id: Optional[uuid.UUID] = None
     invitees: List[uuid.UUID] = []
 
 
 class EventRequest(BaseModel):
-    id: Optional[uuid.UUID] = None
+    id: Optional[str] = None
     title: str
-    description: Optional[str] = None
+    description: Optional[str] = ""
     status: str
     event_type: EventType
     start_time: datetime
@@ -86,6 +87,7 @@ class EventResponse(BaseModelSchema):
     start_time: datetime
     end_time: datetime
     status: Optional[EventStatus] = None
+    event_type: EventType = EventType.PERSONAL
     creator: uuid.UUID
     group: Optional[GroupResponse] = None
 
