@@ -3,7 +3,6 @@ type props = {
   set: React.Dispatch<React.SetStateAction<Date>>;
 }
 const DatePickerOne = ({date, set}: props) => {
-
   return (
     <div>
       <div className="relative">
