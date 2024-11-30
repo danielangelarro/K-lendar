@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 
 import { Task } from "../../types/task";
-import SelectStatus from "./SelectGroup/SelectStatus";
+import SelectStatus from "./Select/SelectStatus";
 import DatePickerOne from "./DatePicker/DatePickerOne";
-import SelectType from "./SelectGroup/SelectEventType";
+import SelectType from "./Select/SelectEventType";
 
 type props = {
   header: string;
@@ -88,13 +88,13 @@ const TaskForm = ({header, edit, old_task}: props) => {
                 <label className="mb-2.5 block text-black dark:text-white">
                   Start Time
                 </label>
-                <DatePickerOne date={startTime.toDateString()} set={setStartTime}/>
+                <DatePickerOne date={new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate(), startTime.getHours() - 5, startTime.getMinutes()).toISOString().slice(0,16)} set={setStartTime}/>
               </div>
               <div className="mb-6">
                 <label className="mb-2.5 block text-black dark:text-white">
                   End Time
                 </label>
-                <DatePickerOne date={endTime.toDateString()} set={setEndTime}/>
+                <DatePickerOne date={new Date(endTime.getFullYear(), endTime.getMonth(), endTime.getDate(), endTime.getHours() - 5, endTime.getMinutes()).toISOString().slice(0,16)} set={setEndTime}/>
               </div>
               <div className="mb-6">
                 <label className="mb-2.5 block text-black dark:text-white">

@@ -1,13 +1,15 @@
-import { useState } from 'react';
+type props = {
+  text: string;
+  value: boolean;
+  set: any;
+}
 
-const CheckboxTwo = () => {
-  const [isChecked, setIsChecked] = useState<boolean>(false);
-
+const CheckboxTwo = ({text, value, set}: props) => {
   return (
     <div>
       <label
         htmlFor="checkboxLabelTwo"
-        className="flex cursor-pointer select-none items-center"
+        className="flex cursor-pointer select-none items-center mb-2.5 block text-black dark:text-white"
       >
         <div className="relative">
           <input
@@ -15,15 +17,15 @@ const CheckboxTwo = () => {
             id="checkboxLabelTwo"
             className="sr-only"
             onChange={() => {
-              setIsChecked(!isChecked);
+              set(!value)
             }}
           />
           <div
             className={`mr-4 flex h-5 w-5 items-center justify-center rounded border ${
-              isChecked && 'border-primary bg-gray dark:bg-transparent'
+              value && 'border-primary bg-gray dark:bg-transparent'
             }`}
           >
-            <span className={`opacity-0 ${isChecked && '!opacity-100'}`}>
+            <span className={`opacity-0 ${value && '!opacity-100'}`}>
               <svg
                 width="11"
                 height="8"
@@ -41,7 +43,7 @@ const CheckboxTwo = () => {
             </span>
           </div>
         </div>
-        Checkbox Text
+        {text}
       </label>
     </div>
   );

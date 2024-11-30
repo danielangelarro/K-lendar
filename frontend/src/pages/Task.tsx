@@ -14,8 +14,8 @@ const taskData: Task[] = [
     id: 0,
     title: 'Free package',
     description: '0000000000000000000000000000000000000000000000000000000000000000000000000000',
-    start_time: new Date(1980,0,7),
-    end_time: new Date(1980,1,7),
+    start_time: new Date(1980,0,7,7,19),
+    end_time: new Date(1980,1,7,8,20),
     group: `Jan 13,2023`,
     status: 'confirmed',
     event_type: 'group',
@@ -52,7 +52,7 @@ const taskData: Task[] = [
   },
 ];
 
-const Chart = () => {
+const TaskPage = () => {
   const [ tasks, setTasks ] = useState<Task[]>(taskData)
   const [ modalSuccessfully, setModalSuccessfully ] = useState<boolean>(false)
   const [ msgSuccessfully, setMsgSuccessfully ] = useState<string>('')
@@ -123,27 +123,29 @@ const Chart = () => {
           <Sucessfully msg={msgSuccessfully}/>
         </div>
       )}
+      <Breadcrumb pageName="Task" />
+      
       { modalEditTask && (
         <div className=''>
           <TaskForm edit={end_edit} old_task={selectedTask} header={selectedTask ? 'Edit Task' : 'Create Task'}/>
         </div>
       )}
 
-      <Breadcrumb pageName="Chart" />
-
-      <div className="grid grid-cols-12 gap-4 md:gap-6 2xl:gap-7.5">
-        <div className="col-span-12 xl:col-span-8">
-          <TableThree del={del} tasks={tasks} edit={start_edit}/>
-          <button onClick={() => clickCreate()} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
-            New Task
-          </button>
+      {!modalEditTask && (
+        <div className="grid grid-cols-12 gap-4 md:gap-6 2xl:gap-7.5">
+          <div className="col-span-12 xl:col-span-8">
+            <TableThree del={del} tasks={tasks} edit={start_edit}/>
+            <button onClick={() => clickCreate()} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
+              New Task
+            </button>
+          </div>
+          {/* <ChartOne />
+          <ChartTwo />
+          <ChartThree /> */}
         </div>
-        {/* <ChartOne />
-        <ChartTwo />
-        <ChartThree /> */}
-      </div>
+      )}
     </>
   );
 };
 
-export default Chart;
+export default TaskPage;

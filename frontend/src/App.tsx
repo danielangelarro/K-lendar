@@ -7,13 +7,13 @@ import PageTitle from './components/PageTitle';
 import SignIn from './pages/Authentication/SignIn';
 import SignUp from './pages/Authentication/SignUp';
 import Calendar from './pages/Calendar';
-import Chart from './pages/Chart';
+import Chart from './pages/Task';
 import FormElements from './pages/Form/FormElements';
-import FormLayout from './pages/Form/FormLayout';
 import Profile from './pages/Profile';
 import Alerts from './pages/UiElements/Alerts';
 import Buttons from './pages/UiElements/Buttons';
 import DefaultLayout from './layout/DefaultLayout';
+import Group from './pages/Group';
 
 const ProtectedRoute = ({ element }: { element: JSX.Element }) => {
   const { isAuthenticated } = useAuthContext();
@@ -52,6 +52,15 @@ function App() {
             }
           />
           <Route
+            path="/group"
+            element={
+              <DefaultLayout>
+                <PageTitle title="Group | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ProtectedRoute element={<Group />} />
+              </DefaultLayout>
+            }
+          />
+          <Route
             path="/calendar"
             element={
               <DefaultLayout>
@@ -75,15 +84,6 @@ function App() {
               <DefaultLayout>
                 <PageTitle title="Form Elements | TailAdmin - Tailwind CSS Admin Dashboard Template" />
                 <ProtectedRoute element={<FormElements />} />
-              </DefaultLayout>
-            }
-          />
-          <Route
-            path="/forms/form-layout"
-            element={
-              <DefaultLayout>
-                <PageTitle title="Form Layout | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <ProtectedRoute element={<FormLayout />} />
               </DefaultLayout>
             }
           />
