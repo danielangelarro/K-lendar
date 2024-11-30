@@ -16,6 +16,10 @@ class IGroupRepository(BaseRepository):
         pass
 
     @abstractmethod
+    async def get_by_name(self, group_id: uuid.UUID) -> GroupResponse:
+        pass
+
+    @abstractmethod
     async def update(self, group_id: uuid.UUID, group_data: GroupCreate) -> GroupResponse:
         pass
 

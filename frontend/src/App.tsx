@@ -7,13 +7,13 @@ import PageTitle from './components/PageTitle';
 import SignIn from './pages/Authentication/SignIn';
 import SignUp from './pages/Authentication/SignUp';
 import Calendar from './pages/Calendar';
-import Chart from './pages/Task';
 import FormElements from './pages/Form/FormElements';
 import Profile from './pages/Profile';
 import Alerts from './pages/UiElements/Alerts';
 import Buttons from './pages/UiElements/Buttons';
 import DefaultLayout from './layout/DefaultLayout';
 import Group from './pages/Group';
+import TaskPage from './pages/Task';
 
 const ProtectedRoute = ({ element }: { element: JSX.Element }) => {
   const { isAuthenticated } = useAuthContext();
@@ -88,11 +88,11 @@ function App() {
             }
           />
           <Route
-            path="/chart"
+            path="/task"
             element={
               <DefaultLayout>
-                <PageTitle title="Basic Chart | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <ProtectedRoute element={<Chart />} />
+                <PageTitle title="Tasks | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ProtectedRoute element={<TaskPage />} />
               </DefaultLayout>
             }
           />

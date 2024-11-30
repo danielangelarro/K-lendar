@@ -56,7 +56,7 @@ class AuthService(IAuthService):
             username: str = payload.get("sub")
             if username is None:
                 raise credentials_exception
-            user = await self.repo_instance.get_by_id(username)
+            user = await self.repo_instance.get_by_username(username)
             if user is None:
                 raise credentials_exception
             return user

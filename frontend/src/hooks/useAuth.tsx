@@ -1,44 +1,91 @@
 import { useEffect, useCallback } from 'react';
-import useLocalStorage from './useLocalStorage';
 
 export interface User {
-  // Define las propiedades del usuario si es necesario
+  id: string;
+  name: string;
+  email: string;
 }
 
+// Función de utilidad para parsear JSON de manera segura
+const safeParseJSON = <T,>(value: string | null, defaultValue: T): T => {
+  if (!value) return defaultValue;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    console.error('Error parsing JSON:', error);
+    return defaultValue;
+  }
+};
+
 function useAuth() {
-  const [token, setToken] = useLocalStorage<string | null>('authToken', null);
-  const [user, setUser] = useLocalStorage<User | null>('authUser', null);
+  // Métodos seguros para obtener datos de localStorage
+  const getTokenFromStorage = () => {
+    try {
+      return localStorage.getItem('authToken');
+    } catch (error) {
+      console.error('Error getting token from localStorage:', error);
+      return null;
+    }
+  };
 
-  useEffect(() => {
+  const getUserFromStorage = () => {
+    try {
+      const storedUser = localStorage.getItem('authUser');
+      return safeParseJSON<User | null>(storedUser, null);
+    } catch (error) {
+      console.error('Error getting user from localStorage:', error);
+      return null;
+    }
+  };
+
+  // Validar token
+  const validateToken = useCallback(() => {
+    const token = getTokenFromStorage();
     if (token) {
-      // Verificar si el token es válido y obtener datos del usuario
-      const payloadBase64 = token.split('.')[1];
-      const decodedPayload = JSON.parse(atob(payloadBase64));
-      const exp = decodedPayload.exp;
-
-      if (Date.now() >= exp * 1000) {
-        setToken(null);
-        setUser(null);
+      try {
+        const payloadBase64 = token.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payloadBase64));
+        
+        // Verificar expiración
+        return Date.now() < (decodedPayload.exp * 1000);
+      } catch (error) {
+        console.error('Token validation error:', error);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('authUser');
+        return false;
       }
     }
-  }, [token, setToken, setUser]);
+    return false;
+  }, []);
 
-  const signIn = useCallback((newToken: string, userData: User) => {
-    setToken(newToken);
-    setUser(userData);
-  }, [setToken, setUser]);
+  // Métodos de autenticación
+  const signIn = (newToken: string, userData: User) => {
+    try {
+      localStorage.setItem('authToken', newToken);
+      localStorage.setItem('authUser', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Error storing auth data:', error);
+    }
+  };
 
-  const signOut = useCallback(() => {
-    setToken(null);
-    setUser(null);
-  }, [setToken, setUser]);
+  const signOut = () => {
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authUser');
+    } catch (error) {
+      console.error('Error removing auth data:', error);
+    }
+  };
 
-  const isAuthenticated = Boolean(token);
+  // Verificar token al inicio
+  useEffect(() => {
+    validateToken();
+  }, [validateToken]);
 
   return {
-    token,
-    user,
-    isAuthenticated,
+    token: getTokenFromStorage(),
+    user: getUserFromStorage(),
+    isAuthenticated: validateToken(),
     signIn,
     signOut,
   };
