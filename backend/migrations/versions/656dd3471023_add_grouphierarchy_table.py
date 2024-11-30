@@ -1,8 +1,8 @@
-"""Change id type from uuid to str
+"""Add GroupHierarchy Table
 
-Revision ID: 2875cd9aa896
+Revision ID: 656dd3471023
 Revises: 
-Create Date: 2024-11-27 11:33:08.981667
+Create Date: 2024-11-29 15:23:21.227712
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2875cd9aa896'
+revision: str = '656dd3471023'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,7 +30,9 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
-    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_users_id'), ['id'], unique=False)
+
     op.create_table('events',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
@@ -43,19 +45,34 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['creator'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_events_id'), 'events', ['id'], unique=False)
+    with op.batch_alter_table('events', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_events_id'), ['id'], unique=False)
+
     op.create_table('groups',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('group_name', sa.String(length=255), nullable=True),
     sa.Column('owner_id', sa.String(length=36), nullable=False),
-    sa.Column('parent_group', sa.String(length=36), nullable=True),
     sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
-    sa.ForeignKeyConstraint(['parent_group'], ['groups.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_groups_id'), 'groups', ['id'], unique=False)
+    with op.batch_alter_table('groups', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_groups_id'), ['id'], unique=False)
+
+    op.create_table('group_hierarchy',
+    sa.Column('id', sa.String(length=36), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('parent_group_id', sa.String(length=36), nullable=False),
+    sa.Column('child_group_id', sa.String(length=36), nullable=False),
+    sa.ForeignKeyConstraint(['child_group_id'], ['groups.id'], ),
+    sa.ForeignKeyConstraint(['parent_group_id'], ['groups.id'], ),
+    sa.PrimaryKeyConstraint('id', 'parent_group_id', 'child_group_id')
+    )
+    with op.batch_alter_table('group_hierarchy', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_group_hierarchy_id'), ['id'], unique=False)
+
     op.create_table('member',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
@@ -66,7 +83,9 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_member_id'), 'member', ['id'], unique=False)
+    with op.batch_alter_table('member', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_member_id'), ['id'], unique=False)
+
     op.create_table('notification',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
@@ -79,7 +98,9 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['sender'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_notification_id'), 'notification', ['id'], unique=False)
+    with op.batch_alter_table('notification', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_notification_id'), ['id'], unique=False)
+
     op.create_table('user_event',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
@@ -91,22 +112,40 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_user_event_id'), 'user_event', ['id'], unique=False)
+    with op.batch_alter_table('user_event', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_user_event_id'), ['id'], unique=False)
+
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_user_event_id'), table_name='user_event')
+    with op.batch_alter_table('user_event', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_user_event_id'))
+
     op.drop_table('user_event')
-    op.drop_index(op.f('ix_notification_id'), table_name='notification')
+    with op.batch_alter_table('notification', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_notification_id'))
+
     op.drop_table('notification')
-    op.drop_index(op.f('ix_member_id'), table_name='member')
+    with op.batch_alter_table('member', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_member_id'))
+
     op.drop_table('member')
-    op.drop_index(op.f('ix_groups_id'), table_name='groups')
+    with op.batch_alter_table('group_hierarchy', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_group_hierarchy_id'))
+
+    op.drop_table('group_hierarchy')
+    with op.batch_alter_table('groups', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_groups_id'))
+
     op.drop_table('groups')
-    op.drop_index(op.f('ix_events_id'), table_name='events')
+    with op.batch_alter_table('events', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_events_id'))
+
     op.drop_table('events')
-    op.drop_index(op.f('ix_users_id'), table_name='users')
+    with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_users_id'))
+
     op.drop_table('users')
     # ### end Alembic commands ###

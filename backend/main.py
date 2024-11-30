@@ -1,5 +1,6 @@
 import inject
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.settings import configure as inject_configure
 from app.api.user_router import router as user_router
@@ -15,6 +16,14 @@ from app.infrastructure.sqlite.database import engine
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Lista de orígenes permitidos
+    allow_credentials=True,   # Permitir credenciales (cookies, autenticación)
+    allow_methods=["*"],      # Permitir todos los métodos (GET, POST, etc.)
+    allow_headers=["*"],      # Permitir todos los encabezados
+)
 
 @app.on_event("startup")
 async def startup():
