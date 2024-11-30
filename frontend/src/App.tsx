@@ -6,13 +6,13 @@ import PageTitle from './components/PageTitle';
 import SignIn from './pages/Authentication/SignIn';
 import SignUp from './pages/Authentication/SignUp';
 import Calendar from './pages/Calendar';
-import Chart from './pages/Chart';
+import Chart from './pages/Task';
 import FormElements from './pages/Form/FormElements';
-import FormLayout from './pages/Form/FormLayout';
 import Profile from './pages/Profile';
 import Alerts from './pages/UiElements/Alerts';
 import Buttons from './pages/UiElements/Buttons';
 import DefaultLayout from './layout/DefaultLayout';
+import Group from './pages/Group';
 
 function App() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -37,6 +37,15 @@ function App() {
             <>
               <PageTitle title="Calendar | TailAdmin - Tailwind CSS Admin Dashboard Template" />
               <Calendar />
+            </>
+          }
+        />
+        <Route
+          path="/group"
+          element={
+            <>
+              <PageTitle title="Group | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <Group />
             </>
           }
         />
@@ -72,7 +81,7 @@ function App() {
           element={
             <>
               <PageTitle title="Form Layout | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-              <FormLayout />
+              <FormElements />
             </>
           }
         />
