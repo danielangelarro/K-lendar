@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 
 import { Task } from "../../types/task";
-import SelectStatus from "./SelectGroup/SelectStatus";
+import SelectStatus from "./Select/SelectStatus";
 import DatePickerOne from "./DatePicker/DatePickerOne";
-import SelectType from "./SelectGroup/SelectEventType";
+import SelectType from "./Select/SelectEventType";
 
 type props = {
   header: string;
