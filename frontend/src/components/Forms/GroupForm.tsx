@@ -7,21 +7,17 @@ type props = {
   header: string;
   set: React.Dispatch<React.SetStateAction<boolean>>;
   old_group: Group | null;
-  create_edit: boolean;
 }
 
 const GroupForm = ({old_group, header, edit, set}: props) => {
   const [ name, setName ] = useState<string>(old_group ? old_group.name : '')
   const [ description, setDescription ] = useState<string>(old_group ? old_group.description : '')
-  const [ hierarchical, setHierarchical ] = useState<boolean>(old_group ? old_group.is_hierarchical : false)
 
   function create() {
     const group = {
-      id: old_group ? old_group.id : -1,
-      id: create_edit ? old_group.id : null,
+      id: old_group ? old_group.id : null,
       name: name,
       description: description,
-      is_hierarchical: hierarchical,
     }
 
     edit(group)
@@ -63,9 +59,6 @@ const GroupForm = ({old_group, header, edit, set}: props) => {
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
                 ></textarea>
-              </div>
-              <div className="mb-6">
-                <CheckboxTwo text="Hierarchical" value={hierarchical} set={setHierarchical}/>
               </div>
               
               <div className="grid grid-cols-2 w-full justify-center rounded p-3">

@@ -60,5 +60,7 @@ async def update_group(group_id: uuid.UUID, group_update: GroupCreate, request: 
 @require_authentication
 async def delete_group(group_id: uuid.UUID, request: Request):
     group_service: IGroupService = inject.instance(IGroupService)
-    await group_service.delete_group(group_id)
+
+    user_id = request.state.current_user.id
+    await group_service.delete_group(group_id, user_id)
     return {"detail": "Group deleted successfully"}

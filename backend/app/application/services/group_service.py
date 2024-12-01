@@ -31,5 +31,5 @@ class IGroupService(ABC):
         pass
 
     @abstractmethod
-    async def delete_group(self, group_id: uuid.UUID):
+    async def delete_group(self, group_id: uuid.UUID, user_id: uuid.UUID):
         pass

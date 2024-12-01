@@ -29,7 +29,7 @@ class IGroupRepository(BaseRepository):
         pass
 
     @abstractmethod
-    async def delete(self, group_id: uuid.UUID):
+    async def delete(self, group_id: uuid.UUID, user_id: uuid.UUID):
         pass
 
     @abstractmethod

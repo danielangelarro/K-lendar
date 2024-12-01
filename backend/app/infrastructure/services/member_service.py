@@ -9,8 +9,8 @@ from app.domain.models.schemma import UserResponse
 class MemberService(IMemberService):
     repo_instance: IMemberRepository = inject.attr(IMemberRepository)
 
-    async def add_member(self, group_id: uuid.UUID, user_id: uuid.UUID) -> bool:
-        await self.repo_instance.add_member(group_id, user_id)
+    async def add_member(self, group_id: uuid.UUID, email: str) -> bool:
+        await self.repo_instance.add_member(group_id, email)
         return True
     
     async def get_members(self, group_id: uuid.UUID) -> List[UserResponse]:
