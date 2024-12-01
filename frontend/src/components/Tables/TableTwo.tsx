@@ -19,7 +19,7 @@ const TableTwo = ({groupes, edit, del, vueUsersOfGroup}: props) => {
         </h4>
       </div>
 
-      <div className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
+      <div className="grid grid-cols-7 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
         <div className="col-span-1 flex items-center">
           <p className="font-medium"></p>
         </div>
@@ -28,6 +28,9 @@ const TableTwo = ({groupes, edit, del, vueUsersOfGroup}: props) => {
         </div>
         <div className="col-span-1 flex items-center">
           <p className="font-medium">Description</p>
+        </div>
+        <div className="col-span-1 flex items-center">
+          <p className="font-medium">Parent</p>
         </div>
         <div className="col-span-1 hidden items-center sm:flex">
           <p className="font-medium">Owner</p>
@@ -42,13 +45,13 @@ const TableTwo = ({groupes, edit, del, vueUsersOfGroup}: props) => {
 
       {groupes.map((group, key) => (
         <div
-          className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
+          className="grid grid-cols-7 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
           key={key}
         >
           <div className="col-span-1 flex items-center">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <p className="text-sm text-black dark:text-white">
-                {group.is_my ? '⭐' : ''}
+                {group.is_my ? '👑' : '🔹'}
               </p>
             </div>
           </div>
@@ -63,6 +66,13 @@ const TableTwo = ({groupes, edit, del, vueUsersOfGroup}: props) => {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <p className="text-sm text-black dark:text-white">
                 {group.description}
+              </p>
+            </div>
+          </div>
+          <div className="col-span-1 flex items-center">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <p className="text-sm text-black dark:text-white">
+                {group.parent ? group.parent : "-"}
               </p>
             </div>
           </div>

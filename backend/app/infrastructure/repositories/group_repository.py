@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from app.application.repositories.group_repository import IGroupRepository
 from app.domain.models.schemma import GroupCreate, UserResponse
 from app.domain.models.schemma import GroupResponse
-from app.infrastructure.sqlite.tables import Group, Member
+from app.infrastructure.sqlite.tables import Group, GroupHierarchy, Member
 from app.infrastructure.sqlite.database import get_db
 from app.infrastructure.sqlite.database import get_db
 from app.infrastructure.repositories.mapper import GroupMapper
@@ -70,6 +70,15 @@ class GroupRepository(IGroupRepository):
                 response[-1].cant_members = member_count
                 response[-1].owner_username = user.username
                 response[-1].is_my = group.owner_id == str(user.id)
+
+                result = await db.execute(
+                    select(Group)
+                    .join(GroupHierarchy, GroupHierarchy.parent_group_id == Group.id)
+                    .where(GroupHierarchy.child_group_id == str(response[-1].id)))
+                group_hierarchy = result.scalars().first()
+
+                if group_hierarchy:
+                    response[-1].parent = group_hierarchy.group_name
             
             return response
 
@@ -106,6 +115,42 @@ class GroupRepository(IGroupRepository):
             finally:
                 await db.close()
     
+    async def update_parent(self, group_id: uuid.UUID, parent_group_id: uuid.UUID) -> GroupResponse:
+        async with get_db() as db:
+            try:
+                await db.begin()
+                result = await db.execute(select(Group).where(Group.id == str(group_id)))
+                group = result.scalars().first()
+
+                if not group:
+                    raise HTTPException(status_code=404, detail="Group not found")
+
+                result = await db.execute(select(Group).where(Group.id == str(parent_group_id)))
+                parent_group = result.scalars().first()
+
+                if not parent_group:
+                    raise HTTPException(status_code=404, detail="Parent group not found")
+
+                result = await db.execute(select(GroupHierarchy).where(GroupHierarchy.child_group_id == str(group_id)))
+                group_hierarchy = result.scalars().first()
+
+                if group_hierarchy:
+                    group_hierarchy.parent_group_id = str(parent_group_id)
+                else:
+                    group_hierarchy = GroupHierarchy(child_group_id=str(group_id), parent_group_id=str(parent_group_id))
+                    db.add(group_hierarchy)
+
+                await db.flush()
+                await self.commit(db)
+                await self.refresh(db, group)
+                return self.mapper.to_entity(group)
+            except Exception as e:
+                await db.rollback()
+                raise e
+            finally:
+                await db.close()
+
+
     async def delete(self, group_id: uuid.UUID, user_id: uuid.UUID):
         async with get_db() as db:
             try:

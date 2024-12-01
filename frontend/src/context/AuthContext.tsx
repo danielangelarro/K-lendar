@@ -54,6 +54,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Método de inicio de sesión
   const signIn = (newToken: string, userData: User) => {
     try {
+      console.log("signIn called with token:", newToken);
+      
       localStorage.setItem('authToken', newToken);
       localStorage.setItem('authUser', JSON.stringify(userData));
       setToken(newToken);

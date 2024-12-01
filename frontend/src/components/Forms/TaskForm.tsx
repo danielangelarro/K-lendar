@@ -4,6 +4,9 @@ import { Task } from "../../types/task";
 import SelectStatus from "./Select/SelectStatus";
 import DatePickerOne from "./DatePicker/DatePickerOne";
 import SelectType from "./Select/SelectEventType";
+import { Group } from "../../types/group";
+import api from "../../api/axios";
+import Warning from "../Alerts/Warning";
 
 type props = {
   header: string;
@@ -19,11 +22,31 @@ const TaskForm = ({header, edit, old_task, set}: props) => {
   const [ startTime, setStartTime ] = useState<Date>(old_task ? new Date(old_task.start_time) : new Date())
   const [ endTime, setEndTime ] = useState<Date>(old_task ? new Date(old_task.end_time) : new Date())
   const [ eventType, setEventType ] = useState<string>(old_task ? old_task.event_type : '')
-  const [ group, setGroup ] = useState<string>(old_task ? old_task.group : '')
+  const [ group, setGroup ] = useState<string | null>(old_task ? old_task.group : '')
+  const [ groups, setGroups ] = useState<Group[]>([]);
+  const [ warning, setWarning ] = useState<boolean | undefined>(false);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const response = await api.get('/groups/all');
+        setGroups(response.data);
+      } catch (error) {
+        console.error('Error al obtener grupos:', error);
+      }
+    };
+
+    fetchGroups();
+  }, []);
 
   useEffect(() => {
     if (eventType != 'group') setGroup('')
   },[eventType])
+
+  useEffect(() => {
+    const g = groups.find(g => g.name === group);
+    setWarning(g && !g.is_my);
+  }, [group]);
 
   function create() {
     const task = {
@@ -103,18 +126,28 @@ const TaskForm = ({header, edit, old_task, set}: props) => {
                 </label>
                 <SelectType value={eventType} set={setEventType}/>
               </div>
-              { eventType == 'group' && (
+              { (eventType == 'group' || eventType == 'hierarchical') && (
                 <div className="mb-6">
                   <label className="mb-2.5 block text-black dark:text-white">
                     Group
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Group"
-                    value={group}
-                    onChange={(e) => setGroup(e.target.value)}
-                    className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                  />
+                  
+                  { warning && (
+                    <Warning 
+                      msg="Please be advised that a new task will be created shortly. Once the task is created, you will have the opportunity to review it and either accept or decline based on your availability and workload."
+                    />
+                  )}
+
+                  <select
+                    value={group || ''}
+                    onChange={(e) => setGroup(e.target.value || null)}
+                    className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:text-white"
+                  >
+                    <option value="">None</option>
+                    {groups.map(g => (
+                      <option key={g.id} value={g.name}>{g.is_my ? '👑' : '🔹'} {g.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
               

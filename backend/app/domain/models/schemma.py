@@ -58,6 +58,7 @@ class GroupResponse(BaseModelSchema):
     cant_members: Optional[int] = 0
     description: Optional[str]
     is_my: Optional[bool] = False
+    parent: Optional[str] = None
 
 
 class EventCreate(BaseModelSchema):
@@ -111,6 +112,8 @@ class NotificationResponse(BaseModelSchema):
     event: Optional[uuid.UUID] = None
     message: str
     is_read: bool
+    priority: bool = True
+    date: datetime
 
 
 class AgendaEventResponse(BaseModelSchema):

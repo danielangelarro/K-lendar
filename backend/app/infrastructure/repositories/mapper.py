@@ -103,6 +103,8 @@ class NotificationMapper(BaseMapper):
             recipient=uuid.UUID(notification.recipient),
             message=notification.message,
             is_read=notification.is_read,
+            priority=notification.priority if notification.priority is not None else True,
+            date=notification.created_at,
         )
 
     def to_table(self, entity):
