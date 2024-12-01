@@ -14,6 +14,8 @@ import Buttons from './pages/UiElements/Buttons';
 import DefaultLayout from './layout/DefaultLayout';
 import Group from './pages/Group';
 import TaskPage from './pages/Task';
+import Notifications from './components/Notificationes/Notifications';
+import TimeLine from './pages/TimeLine/TimeLine'
 
 const ProtectedRoute = ({ element }: { element: JSX.Element }) => {
   const { isAuthenticated } = useAuthContext();
@@ -57,6 +59,24 @@ function App() {
               <DefaultLayout>
                 <PageTitle title="Group | TailAdmin - Tailwind CSS Admin Dashboard Template" />
                 <ProtectedRoute element={<Group />} />
+              </DefaultLayout>
+            }
+          />
+          <Route
+            path="/notification"
+            element={
+              <DefaultLayout>
+                <PageTitle title="Notificationes | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ProtectedRoute element={<Notifications items={[]} />} />
+              </DefaultLayout>
+            }
+          />
+          <Route
+            path="/timeline"
+            element={
+              <DefaultLayout>
+                <PageTitle title="Group | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ProtectedRoute element={<TimeLine />} />
               </DefaultLayout>
             }
           />
