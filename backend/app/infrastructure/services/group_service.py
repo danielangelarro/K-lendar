@@ -26,5 +26,5 @@ class GroupService(IGroupService):
     async def update_group(self, group_id: uuid.UUID, group_data: GroupCreate) -> GroupResponse:
         return await self.repo_instance.update(group_id, group_data)
 
-    async def delete_group(self, group_id: uuid.UUID):
-        await self.repo_instance.delete(group_id)
+    async def delete_group(self, group_id: uuid.UUID, user_id: uuid.UUID):
+        await self.repo_instance.delete(group_id, user_id)

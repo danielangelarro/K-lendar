@@ -13,13 +13,6 @@ const TableThree = ({tasks, del, edit, filtrar}: props) => {
   const [ filterStartTime, setFilterStartTime ] = useState<Date>(new Date())
   const [ filterEndTime, setFilterEndTime ] = useState<Date>(new Date())
 
-  function filt() {
-    filtrar({
-      start_time: filterStartTime,
-      end_time: filterEndTime,
-    })
-  }
-
   return (
     <>
       <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
@@ -36,7 +29,7 @@ const TableThree = ({tasks, del, edit, filtrar}: props) => {
             </label>
             <DatePickerOne date={new Date(filterEndTime.getFullYear(), filterEndTime.getMonth(), filterEndTime.getDate(), filterEndTime.getHours() - 5, filterEndTime.getMinutes()).toISOString().slice(0,16)} set={setFilterEndTime}/>
           </div>
-            <button onClick={() => filt()} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
+            <button onClick={() => filtrar(filterStartTime, filterEndTime)} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
               Filtrar
             </button>
           
@@ -68,7 +61,7 @@ const TableThree = ({tasks, del, edit, filtrar}: props) => {
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
                     <p className="text-black dark:text-white">
-                      {taskItem.group != null ? taskItem.group : '-'}
+                      {taskItem.group != null ? taskItem.group.name : '-'}
                     </p>
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
