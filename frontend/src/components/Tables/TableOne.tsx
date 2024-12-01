@@ -1,30 +1,96 @@
 import { useState } from 'react';
 import { User } from '../../types/user';
+import api from '../../api/axios';
 
 type props = {
   userData: User[];
   del: any;
-  back: React.Dispatch<React.SetStateAction<boolean>>
+  back: React.Dispatch<React.SetStateAction<boolean>>,
+  groupId: string
 }
 
-const TableOne = ({userData, del, back}: props) => {
-  const [ users, setUsers ] = useState<User[]>(userData)
+const TableOne = ({userData, del, back, groupId}: props) => {
+  const [ users, setUsers ] = useState<User[]>(userData);
 
-  function delUser(id: number) {
-    setUsers(users.filter(user => user.id != id))
-    del(id)
+  const [email, setEmail] = useState('');
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [msgSuccessfully, setMsgSuccessfully] = useState('');
+  const [modalSuccessfully, setModalSuccessfully] = useState(false);
+
+
+  function delUser(id: string) {
+    del(groupId, id);
+    setUsers(users.filter(user => user.id != id));
   }
+
+  const handleInvite = async () => {
+    try {
+      const response = await api.post(`/groups/${groupId}/${email}/add_member`);
+      setMsgSuccessfully(response.data.message);
+      setModalSuccessfully(true);
+      setInviteModalOpen(false);
+      setEmail('');
+    } catch (error) {
+      setMsgSuccessfully("Error al enviar la invitación");
+      setModalSuccessfully(true);
+    }
+  };
   
   return (
     <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
-      <button
-        onClick={() => back(false)}
-        className="inline-flex items-center justify-center bg-primary py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
-      >
-        Back
-      </button>
+      <div className="flex w-full justify-between">
+        <button
+          onClick={() => back(false)}
+          className="rounded inline-flex items-center justify-center bg-primary py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
+          >
+          Back
+        </button>
+
+        <button
+          onClick={() => setInviteModalOpen(true)}
+          className="rounded inline-flex items-center justify-center bg-success py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
+          >
+          Add new user
+        </button>
+      </div>
+
+      {inviteModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h2 className="text-xl font-semibold mb-4">Add New User</h2>
+            <input
+              type="email"
+              placeholder="Enter user's email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <div className="flex justify-between">
+              <button 
+                onClick={handleInvite} 
+                className="bg-primary text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition duration-200"
+              >
+                Add and Send Invitation
+              </button>
+              <button 
+                onClick={() => setInviteModalOpen(false)} 
+                className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition duration-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalSuccessfully && (
+        <div className="mt-4">
+          <p className="text-green-600">{msgSuccessfully}</p>
+        </div>
+      )}
+
       <h4 className="mb-6 text-xl font-semibold mt-10 text-black dark:text-white">
-        Users Conocidos
+        Members of group
       </h4>
 
       <div className="flex flex-col">

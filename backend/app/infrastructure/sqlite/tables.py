@@ -4,6 +4,7 @@ from enum import Enum as TypeEnum
 from sqlalchemy import Enum
 from sqlalchemy import Column
 from sqlalchemy import String
+from sqlalchemy import Boolean
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy.sql import func
@@ -132,7 +133,9 @@ class Notification(SQLAlchemyBaseModel):
     
     recipient = Column(String(36), ForeignKey('users.id'), nullable=False)
     sender = Column(String(36), ForeignKey('users.id'), nullable=False)
-    event = Column(String(36), ForeignKey('events.id'), nullable=False)
+    event = Column(String(36), ForeignKey('events.id'))
+    message = Column(String(500), default="")
+    is_read = Column(Boolean, default=False)
 
     recipient_rel = relationship('User', foreign_keys=[recipient], back_populates='received_notifications')
     sender_rel = relationship('User', foreign_keys=[sender], back_populates='sent_notifications')

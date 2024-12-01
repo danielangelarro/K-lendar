@@ -106,8 +106,9 @@ class MemberResponse(BaseModelSchema):
 class NotificationResponse(BaseModelSchema):
     id: uuid.UUID
     recipient: uuid.UUID
-    sender: uuid.UUID
-    event: uuid.UUID
+    sender: Optional[uuid.UUID] = None
+    event: Optional[uuid.UUID] = None
+    message: str
     is_read: bool
 
 

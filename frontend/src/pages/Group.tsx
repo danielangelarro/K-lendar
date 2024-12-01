@@ -19,7 +19,6 @@ const GroupPage = () => {
     useEffect(() => {
         // Cargar usuarios y grupos al montar el componente
         fetchGroups();
-        // fetchUsers();
     }, []);
 
     useEffect(() => {
@@ -34,15 +33,6 @@ const GroupPage = () => {
     useEffect(() => {
       if (modalSuccessfully) setTimeout(() => setModalSuccessfully(false), 1500);
     }, [modalSuccessfully]);
-
-    const fetchUsers = async () => {
-        try {
-            const response = await api.get('/users');
-            setUsers(response.data);
-        } catch (error) {
-            console.error('Error al obtener usuarios:', error);
-        }
-    };
 
     const fetchGroups = async () => {
         try {
@@ -75,36 +65,39 @@ const GroupPage = () => {
         const group = groupes.find(group => group.id === id);
         if (group) {
             setGroupSelected(group);
-            setCreateEdit(true);
             setModal(true);
         }
     };
 
-    const vueUsersOfGroup = (id: string) => {
+    const vueUsersOfGroup = async (id: string) => {
         const group = groupes.find(group => group.id === id);
         if (group) {
+            const response = await api.get(`/groups/${id}/members`);
+            setUsers(response.data);
+
             setGroupSelected(group);
             setUserModal(true);
         }
     };
 
-    const delUserOfGroup = (id: string) => {
-        // Implementar lógica para eliminar usuario del grupo
-        // const updatedMembers = groupSelected?.members.filter(userId => userId !== id);
-        // if (updatedMembers) {
-        //     setGroupSelected(updatedMembers);
-        // }
+    const delUserOfGroup = async (group_id: string, user_id: string) => {
+        try {
+            await api.delete(`/groups/${group_id}/${user_id}/remove_member`);
+
+            setMsgSuccessfully("User removed successfully.");
+        } catch (error) {
+            console.log('Error al eliminar usuario', error);
+            setMsgSuccessfully("Error");
+        }
     };
 
     const endEditGroup = async (group: Group) => {
         try {
             if (group.id) {
-                // Editar grupo existente
-                const response = await api.put(`/groups/${group.id}`, group); // Cambia la URL según tu API
+                const response = await api.put(`/groups/${group.id}`, group);
                 setGroupes(groupes.map(g => (g.id === group.id ? response.data : g)));
             } else {
-                // Crear nuevo grupo
-                const response = await api.post('/groups', group); // Cambia la URL según tu API
+                const response = await api.post('/groups', group);
                 setGroupes([...groupes, response.data]);
             }
             setModal(false);
@@ -126,11 +119,11 @@ const GroupPage = () => {
               </div>
             )}
 
-            {/* {userModal && groupSelected && (
-                <TableOne back={setUserModal} userData={users.filter(user => groupSelected.members.includes(user.id))} del={delUserOfGroup} />
-            )}  */}
+            {userModal && groupSelected && (
+                <TableOne back={setUserModal} userData={users} del={delUserOfGroup} groupId={groupSelected.id} />
+            )} 
             {modal && (
-                <GroupForm edit={endEditGroup} old_group={groupSelected} header={groupSelected ? "Edit Group" : "Create Group"} />
+                <GroupForm set={setModal} edit={endEditGroup} old_group={groupSelected} header={groupSelected ? "Edit Group" : "Create Group"} />
             )}
             {!(userModal || modal) && (
                 <>
