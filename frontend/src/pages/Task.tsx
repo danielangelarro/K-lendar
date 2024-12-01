@@ -4,6 +4,7 @@ import TableThree from '../components/Tables/TableThree';
 import Sucessfully from '../components/Alerts/Sucessfully';
 import TaskForm from '../components/Forms/TaskForm';
 import { Task } from '../types/task';
+import Loader from '../common/Loader';
 
 import { isCollitionDateRanges, Range } from './Calendar';
 import api from '../api/axios'; // Asegúrate de importar tu configuración de axios
@@ -106,18 +107,27 @@ const TaskPage = () => {
     setModalEditTask(true);
   };
 
-  function filtrar(range: Range) {
-    setTasks(tasks.filter(task => 
-      isCollitionDateRanges({
-        start_time: task.start_time,
-        end_time: task.end_time,
-      }, range)
-    ))
-  }
+  const filtrar = async (start_date: Date, end_date: Date) => {
+    try {
+      // Pedir las tareas en ese rango
+      setIsLoading(true);
+      const response = await api.get(`/agendas/${user}/${start_date}/${end_date}`);
+      
+      // Actualizar estado local
+      setTasks(response.data); 
+      setIsLoading(false);
+    
+    } catch (error) {
+      console.error('Error al eliminar tarea:', error);
+      setMsgSuccessfully("Error al eliminar tarea");
+      setModalSuccessfully(true);
+      setIsLoading(false);
+    }
+  };
 
   // Renderizado condicional con estado de carga
   if (isLoading) {
-    return <div>Cargando tareas...</div>;
+    return <Loader />;
   }
 
   return (
@@ -133,6 +143,7 @@ const TaskPage = () => {
       {modalEditTask && (
         <div className=''>
           <TaskForm 
+            set={setModalEditTask}
             edit={end_edit} 
             old_task={selectedTask} 
             set={setModalEditTask}
