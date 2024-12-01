@@ -35,9 +35,9 @@ class EventService(IEventService):
         # Verificamos la disponibilidad de los miembros
         unavailable_users = []
         for member in group_members:
-            user_agenda = await self.agenda_service.get_user_agenda(member.user_id, event.start_time, event.end_time)
+            user_agenda = await self.agenda_service.get_user_agenda(member.id, event.start_time, event.end_time)
             if user_agenda.events:  # Si hay eventos en el rango de tiempo
-                unavailable_users.append(member.user_id)
+                unavailable_users.append(member.id)
 
         if unavailable_users:
             raise HTTPException(status_code=400, detail=f"Los siguientes usuarios no pueden asistir: {unavailable_users}")
@@ -45,11 +45,8 @@ class EventService(IEventService):
         created_event = await self.repo_instance.create(event)
 
         for member in group_members:
-            await self.repo_instance.asign_event(str(event.id), member.user_id)
-
-        # Enviamos notificaciones a todos los miembros del grupo
-        notification_response = await self.notification_service.send_event_notification(
-            event.group_id, created_event.id)
+            if member.id != event.creator_id:
+                await self.repo_instance.asign_event(str(created_event.id), str(member.id), str(event.group_id))
 
         return created_event
 

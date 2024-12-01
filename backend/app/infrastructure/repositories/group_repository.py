@@ -55,7 +55,10 @@ class GroupRepository(IGroupRepository):
                     func.count(Member.user_id).label('member_count')
                 )
                 .outerjoin(Member, Member.group_id == Group.id)
-                .where(Member.user_id == str(user.id))
+                .where(Group.id.in_(
+                    select(Member.group_id)
+                    .where(Member.user_id == str(user.id))
+                ))
                 .group_by(Group.id)
             )
             
@@ -72,7 +75,7 @@ class GroupRepository(IGroupRepository):
 
     async def get_by_name(self, group_name: str) -> GroupResponse:
         async with get_db() as db:
-            result = await db.execute(select(Group).where(Group.name == group_name))
+            result = await db.execute(select(Group).where(Group.group_name == group_name))
             group = result.scalars().first()
             return self.mapper.to_entity(group) if group else None
 

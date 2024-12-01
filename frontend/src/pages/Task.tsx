@@ -135,6 +135,7 @@ const TaskPage = () => {
           <TaskForm 
             edit={end_edit} 
             old_task={selectedTask} 
+            set={setModalEditTask}
             header={selectedTask ? 'Edit Task' : 'Create Task'}
           />
         </div>

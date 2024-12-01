@@ -95,6 +95,7 @@ class Group(SQLAlchemyBaseModel):
 
     owner = relationship("User", back_populates="owned_groups")
     members = relationship('Member', back_populates='group_rel')
+    user_events = relationship('UserEvent', back_populates='group_rel')
     parent_hierarchies = relationship(
         'GroupHierarchy', 
         foreign_keys=[GroupHierarchy.parent_group_id], 
@@ -112,10 +113,13 @@ class UserEvent(SQLAlchemyBaseModel):
     
     user_id = Column(String(36), ForeignKey('users.id'))
     event_id = Column(String(36), ForeignKey('events.id'))
+    group_id = Column(String(36), ForeignKey('groups.id'))
+
     status = Column(Enum('confirmed', 'pending', 'cancelled', name="status_enum"), default=EventStatus.PENDING)
 
     user_rel = relationship('User', back_populates='participations')
     event_rel = relationship('Event', back_populates='participations')
+    group_rel = relationship('Group', back_populates='user_events')
 
 
 class Member(SQLAlchemyBaseModel):

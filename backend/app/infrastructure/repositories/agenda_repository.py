@@ -25,7 +25,7 @@ class AgendaRepository(IAgendaRepository):
                     )
                 )
                 events = result.scalars().all()
-                return UserAgendaResponse(user_id=user_id, events=[self.mapper(event) for event in events])
+                return UserAgendaResponse(user_id=user_id, events=[self.mapper.to_entity(event) for event in events])
             except Exception as e:
                 await db.rollback()
                 raise e
