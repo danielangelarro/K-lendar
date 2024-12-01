@@ -12,7 +12,7 @@ type props = {
 
 const TableThree = ({tasks, del, edit, filtrar, filterStartDate}: props) => {
   const [ filterStartTime, setFilterStartTime ] = useState<Date>(filterStartDate ? new Date(filterStartDate) : new Date(0,0,0))
-  const [ filterEndTime, setFilterEndTime ] = useState<Date>(filterStartDate ? new Date(filterStartTime.getFullYear(), filterStartTime.getMonth(), filterStartTime.getDate()) : new Date(0,0,0))
+  const [ filterEndTime, setFilterEndTime ] = useState<Date>(filterStartDate ? new Date(filterStartTime.getFullYear(), filterStartTime.getMonth(), filterStartTime.getDate() + 1) : new Date(0,0,0))
 
   return (
     <>

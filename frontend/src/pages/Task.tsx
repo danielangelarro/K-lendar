@@ -7,7 +7,6 @@ import TaskForm from '../components/Forms/TaskForm';
 import { Task } from '../types/task';
 import Loader from '../common/Loader';
 
-import { isCollitionDateRanges, Range } from './Calendar';
 import api from '../api/axios'; // Asegúrate de importar tu configuración de axios
 import { useAuthContext } from '../context/AuthContext'; // Importa el contexto de autenticación
 
