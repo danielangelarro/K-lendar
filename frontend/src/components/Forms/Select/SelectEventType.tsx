@@ -32,8 +32,8 @@ const SelectGroupOne = ({value, set}: props) => {
           <option value="group" className="text-body dark:text-bodydark">
             Group
           </option>
-          <option value="pending" className="text-body dark:text-bodydark">
-            Pending
+          <option value="hierarchical" className="text-body dark:text-bodydark">
+            Hierarchical
           </option>
         </select>
 

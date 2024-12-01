@@ -1,16 +1,39 @@
+import { useState } from "react";
 import { Task } from "../../types/task";
+import DatePickerOne from "../Forms/DatePicker/DatePickerOne";
 
 type props = {
   tasks: Task[];
   del: any;
   edit: any;
+  filtrar: any;
 }
 
-const TableThree = ({tasks, del, edit}: props) => {
+const TableThree = ({tasks, del, edit, filtrar}: props) => {
+  const [ filterStartTime, setFilterStartTime ] = useState<Date>(new Date())
+  const [ filterEndTime, setFilterEndTime ] = useState<Date>(new Date())
+
   return (
     <>
       <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
         <div className="max-w-full overflow-x-auto">
+          <div className="flex mb-6">
+            <label className="mt-3 mr-5 text-black dark:text-white">
+              Filter Start Time
+            </label>
+            <DatePickerOne date={new Date(filterStartTime.getFullYear(), filterStartTime.getMonth(), filterStartTime.getDate(), filterStartTime.getHours() - 5, filterStartTime.getMinutes()).toISOString().slice(0,16)} set={setFilterStartTime}/>
+          </div>
+          <div className="flex mb-6">
+            <label className="mt-3 mr-5 text-black dark:text-white">
+              Filter End Time
+            </label>
+            <DatePickerOne date={new Date(filterEndTime.getFullYear(), filterEndTime.getMonth(), filterEndTime.getDate(), filterEndTime.getHours() - 5, filterEndTime.getMinutes()).toISOString().slice(0,16)} set={setFilterEndTime}/>
+          </div>
+            <button onClick={() => filtrar(filterStartTime, filterEndTime)} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
+              Filtrar
+            </button>
+          
+
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-gray-2 text-left dark:bg-meta-4">
@@ -29,8 +52,8 @@ const TableThree = ({tasks, del, edit}: props) => {
               </tr>
             </thead>
             <tbody>
-              {tasks.map((taskItem, key) => (
-                <tr key={key}>
+              {tasks.map(taskItem => (
+                <tr key={taskItem.id}>
                   <td className="border-b border-[#eee] py-5 px-4 pl-9 dark:border-strokedark xl:pl-11">
                     <h5 className="font-medium text-black dark:text-white">
                       {taskItem.title}
@@ -38,7 +61,7 @@ const TableThree = ({tasks, del, edit}: props) => {
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
                     <p className="text-black dark:text-white">
-                      {taskItem.group != '' ? taskItem.group : '-'}
+                      {taskItem.group != null ? taskItem.group.name : '-'}
                     </p>
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">

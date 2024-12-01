@@ -1,3 +1,4 @@
+from typing import List
 import uuid
 import inject
 
@@ -16,7 +17,19 @@ router = APIRouter()
 @require_authentication
 async def create_group(group_create: GroupCreate, request: Request):
     group_service: IGroupService = inject.instance(IGroupService)
+    group_create.owner = request.state.current_user
     return await group_service.create_group(group_create)
+
+
+@router.get("/groups/all", response_model=List[GroupResponse])
+@require_authentication
+async def get_group_all(request: Request):
+    group_service: IGroupService = inject.instance(IGroupService)
+    
+    current_user = request.state.current_user
+    group = await group_service.get_group_all(current_user)
+    
+    return group
 
 
 @router.get("/groups/{group_id}", response_model=GroupResponse)
@@ -33,9 +46,13 @@ async def get_group(group_id: uuid.UUID, request: Request):
 @require_authentication
 async def update_group(group_id: uuid.UUID, group_update: GroupCreate, request: Request):
     group_service: IGroupService = inject.instance(IGroupService)
+
+    group_update.owner = request.state.current_user
     updated_group = await group_service.update_group(group_id, group_update)
+    
     if not updated_group:
         raise HTTPException(status_code=404, detail="Group not found")
+    
     return updated_group
 
 
@@ -43,5 +60,7 @@ async def update_group(group_id: uuid.UUID, group_update: GroupCreate, request: 
 @require_authentication
 async def delete_group(group_id: uuid.UUID, request: Request):
     group_service: IGroupService = inject.instance(IGroupService)
-    await group_service.delete_group(group_id)
+
+    user_id = request.state.current_user.id
+    await group_service.delete_group(group_id, user_id)
     return {"detail": "Group deleted successfully"}

@@ -1,22 +1,23 @@
 import { useState, useEffect } from "react";
 
 import { Task } from "../../types/task";
-import SelectStatus from "./SelectGroup/SelectStatus";
+import SelectStatus from "./Select/SelectStatus";
 import DatePickerOne from "./DatePicker/DatePickerOne";
-import SelectType from "./SelectGroup/SelectEventType";
+import SelectType from "./Select/SelectEventType";
 
 type props = {
   header: string;
   edit: any;
   old_task: Task | undefined;
+  set: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const TaskForm = ({header, edit, old_task}: props) => {
+const TaskForm = ({header, edit, old_task, set}: props) => {
   const [ title, setTitle ] = useState<string>(old_task ? old_task.title : '')
   const [ description, setDescription ] = useState<string>(old_task ? old_task.description : '')
   const [ status, setStatus ] = useState<string>(old_task ? old_task.status : '')
-  const [ startTime, setStartTime ] = useState<Date>(old_task ? old_task.start_time : new Date())
-  const [ endTime, setEndTime ] = useState<Date>(old_task ? old_task.end_time : new Date())
+  const [ startTime, setStartTime ] = useState<Date>(old_task ? new Date(old_task.start_time) : new Date())
+  const [ endTime, setEndTime ] = useState<Date>(old_task ? new Date(old_task.end_time) : new Date())
   const [ eventType, setEventType ] = useState<string>(old_task ? old_task.event_type : '')
   const [ group, setGroup ] = useState<string>(old_task ? old_task.group : '')
 
@@ -26,14 +27,14 @@ const TaskForm = ({header, edit, old_task}: props) => {
 
   function create() {
     const task = {
-      id: old_task ? old_task.id : -1,
+      id: old_task ? old_task.id : null,
       title: title,
       description: description,
       status: status,
       start_time: startTime,
       end_time: endTime,
       event_type: eventType,
-      group: group, 
+      group_name: group, 
     }
 
     edit(task)
@@ -88,13 +89,13 @@ const TaskForm = ({header, edit, old_task}: props) => {
                 <label className="mb-2.5 block text-black dark:text-white">
                   Start Time
                 </label>
-                <DatePickerOne date={startTime.toDateString()} set={setStartTime}/>
+                <DatePickerOne date={new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate(), startTime.getHours() - 5, startTime.getMinutes()).toISOString().slice(0,16)} set={setStartTime}/>
               </div>
               <div className="mb-6">
                 <label className="mb-2.5 block text-black dark:text-white">
                   End Time
                 </label>
-                <DatePickerOne date={endTime.toDateString()} set={setEndTime}/>
+                <DatePickerOne date={new Date(endTime.getFullYear(), endTime.getMonth(), endTime.getDate(), endTime.getHours() - 5, endTime.getMinutes()).toISOString().slice(0,16)} set={setEndTime}/>
               </div>
               <div className="mb-6">
                 <label className="mb-2.5 block text-black dark:text-white">
@@ -117,9 +118,14 @@ const TaskForm = ({header, edit, old_task}: props) => {
                 </div>
               )}
               
-              <button onClick={() => create()} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
-                {header}
-              </button>
+              <div className="grid grid-cols-2 w-full justify-center rounded p-3">
+                <button onClick={() => create()} className="flex justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
+                  {header}
+                </button>
+                <button onClick={() => set(false)} className="flex justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
+                  Cancel
+                </button>
+              </div>
             </div>
           </form>
         </div>

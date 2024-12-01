@@ -7,13 +7,15 @@ import PageTitle from './components/PageTitle';
 import SignIn from './pages/Authentication/SignIn';
 import SignUp from './pages/Authentication/SignUp';
 import Calendar from './pages/Calendar';
-import Chart from './pages/Chart';
 import FormElements from './pages/Form/FormElements';
-import FormLayout from './pages/Form/FormLayout';
 import Profile from './pages/Profile';
 import Alerts from './pages/UiElements/Alerts';
 import Buttons from './pages/UiElements/Buttons';
 import DefaultLayout from './layout/DefaultLayout';
+import Group from './pages/Group';
+import TaskPage from './pages/Task';
+import Notifications from './components/Notificationes/Notifications';
+import TimeLine from './pages/TimeLine/TimeLine'
 
 const ProtectedRoute = ({ element }: { element: JSX.Element }) => {
   const { isAuthenticated } = useAuthContext();
@@ -52,6 +54,33 @@ function App() {
             }
           />
           <Route
+            path="/group"
+            element={
+              <DefaultLayout>
+                <PageTitle title="Group | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ProtectedRoute element={<Group />} />
+              </DefaultLayout>
+            }
+          />
+          <Route
+            path="/notification"
+            element={
+              <DefaultLayout>
+                <PageTitle title="Notificationes | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ProtectedRoute element={<Notifications items={[]} />} />
+              </DefaultLayout>
+            }
+          />
+          <Route
+            path="/timeline"
+            element={
+              <DefaultLayout>
+                <PageTitle title="Group | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ProtectedRoute element={<TimeLine />} />
+              </DefaultLayout>
+            }
+          />
+          <Route
             path="/calendar"
             element={
               <DefaultLayout>
@@ -79,20 +108,11 @@ function App() {
             }
           />
           <Route
-            path="/forms/form-layout"
+            path="/task"
             element={
               <DefaultLayout>
-                <PageTitle title="Form Layout | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <ProtectedRoute element={<FormLayout />} />
-              </DefaultLayout>
-            }
-          />
-          <Route
-            path="/chart"
-            element={
-              <DefaultLayout>
-                <PageTitle title="Basic Chart | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <ProtectedRoute element={<Chart />} />
+                <PageTitle title="Tasks | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ProtectedRoute element={<TaskPage />} />
               </DefaultLayout>
             }
           />

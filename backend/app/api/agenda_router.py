@@ -9,7 +9,7 @@ from app.domain.models.schemma import UserAgendaResponse
 router = APIRouter()
 
 
-@router.get("/agendas/{user_id}", response_model=UserAgendaResponse)
+@router.get("/agendas/{user_id}/{start_date}/{end_date}", response_model=UserAgendaResponse)
 @require_authentication
 async def get_user_agenda(user_id: uuid.UUID, start_date: datetime, end_date: datetime, request: Request):
     agenda_service: IAgendaService = inject.instance(IAgendaService)
