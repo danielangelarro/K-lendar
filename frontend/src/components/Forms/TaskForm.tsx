@@ -103,7 +103,7 @@ const TaskForm = ({header, edit, old_task, set}: props) => {
                 </label>
                 <SelectType value={eventType} set={setEventType}/>
               </div>
-              { eventType == 'group' && (
+              { (eventType == 'group' || eventType == 'hierarchical') && (
                 <div className="mb-6">
                   <label className="mb-2.5 block text-black dark:text-white">
                     Group

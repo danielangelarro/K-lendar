@@ -14,6 +14,10 @@ class IMemberRepository(BaseRepository):
     @abstractmethod
     async def get_members(self, group_id: uuid.UUID) -> List[UserResponse]:
         pass
+    
+    @abstractmethod
+    async def get_child_groups(self, group_id: uuid.UUID) -> List[UserResponse]:
+        pass
 
     @abstractmethod
     async def remove_member(self, group_id: uuid.UUID, user_id: uuid.UUID) -> bool:

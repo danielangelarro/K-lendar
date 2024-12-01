@@ -52,32 +52,25 @@ class EventService(IEventService):
 
     async def create_event_hierarchical(self, event: EventCreate) -> EventResponse:
         # Obtenemos los miembros del grupo y sus grupos hijos
-        group_members = await self.member_service.get_members(event.group_id)
-        child_groups = await self.member_service.get_child_groups(event.group_id)
+        child_group_members = await self.member_service.get_child_groups(event.group_id)
 
         # Verificamos la disponibilidad de los miembros del grupo
         unavailable_users = []
-        for member in group_members:
-            user_agenda = await self.agenda_service.get_user_agenda(member.user_id, event.start_time, event.end_time)
-            if user_agenda.events:  # Si hay eventos en el rango de tiempo
-                unavailable_users.append(member.user_id)
 
         # Verificamos la disponibilidad de los miembros de los grupos hijos
-        for child_group in child_groups:
-            child_group_members = await self.member_service.get_members(child_group.id)
-            for member in child_group_members:
-                user_agenda = await self.agenda_service.get_user_agenda(member.user_id, event.start_time, event.end_time)
-                if user_agenda.events:  # Si hay eventos en el rango de tiempo
-                    unavailable_users.append(member.user_id)
+        for member in child_group_members:
+            user_agenda = await self.agenda_service.get_user_agenda(member.id, event.start_time, event.end_time)
+            if user_agenda.events:  # Si hay eventos en el rango de tiempo
+                unavailable_users.append(member.id)
 
         if unavailable_users:
             raise HTTPException(status_code=400, detail=f"Los siguientes usuarios no pueden asistir: {unavailable_users}")
 
         created_event = await self.repo_instance.create(event)
 
-        # Enviamos notificaciones a todos los miembros del grupo y de los grupos hijos
-        notification_response = await self.notification_service.send_event_notification(
-            event.group_id, created_event.id)
+        for member in child_group_members:
+            if member.id != event.creator_id:
+                await self.repo_instance.asign_event(str(created_event.id), str(member.id), str(event.group_id))
 
         return created_event
 

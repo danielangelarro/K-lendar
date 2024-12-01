@@ -29,6 +29,10 @@ class IGroupRepository(BaseRepository):
         pass
 
     @abstractmethod
+    async def update_parent(self, group_id: uuid.UUID, parent_group_id: uuid.UUID):
+        pass
+
+    @abstractmethod
     async def delete(self, group_id: uuid.UUID, user_id: uuid.UUID):
         pass
 
