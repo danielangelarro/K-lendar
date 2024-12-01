@@ -4,6 +4,7 @@ from enum import Enum as TypeEnum
 from sqlalchemy import Enum
 from sqlalchemy import Column
 from sqlalchemy import String
+from sqlalchemy import Boolean
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy.sql import func
@@ -94,6 +95,7 @@ class Group(SQLAlchemyBaseModel):
 
     owner = relationship("User", back_populates="owned_groups")
     members = relationship('Member', back_populates='group_rel')
+    user_events = relationship('UserEvent', back_populates='group_rel')
     parent_hierarchies = relationship(
         'GroupHierarchy', 
         foreign_keys=[GroupHierarchy.parent_group_id], 
@@ -111,10 +113,13 @@ class UserEvent(SQLAlchemyBaseModel):
     
     user_id = Column(String(36), ForeignKey('users.id'))
     event_id = Column(String(36), ForeignKey('events.id'))
+    group_id = Column(String(36), ForeignKey('groups.id'))
+
     status = Column(Enum('confirmed', 'pending', 'cancelled', name="status_enum"), default=EventStatus.PENDING)
 
     user_rel = relationship('User', back_populates='participations')
     event_rel = relationship('Event', back_populates='participations')
+    group_rel = relationship('Group', back_populates='user_events')
 
 
 class Member(SQLAlchemyBaseModel):
@@ -132,7 +137,9 @@ class Notification(SQLAlchemyBaseModel):
     
     recipient = Column(String(36), ForeignKey('users.id'), nullable=False)
     sender = Column(String(36), ForeignKey('users.id'), nullable=False)
-    event = Column(String(36), ForeignKey('events.id'), nullable=False)
+    event = Column(String(36), ForeignKey('events.id'))
+    message = Column(String(500), default="")
+    is_read = Column(Boolean, default=False)
 
     recipient_rel = relationship('User', foreign_keys=[recipient], back_populates='received_notifications')
     sender_rel = relationship('User', foreign_keys=[sender], back_populates='sent_notifications')

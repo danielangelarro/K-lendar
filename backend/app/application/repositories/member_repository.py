@@ -8,7 +8,7 @@ from app.domain.models.schemma import MemberResponse, UserResponse
 
 class IMemberRepository(BaseRepository):
     @abstractmethod
-    async def add_member(self, group_id: uuid.UUID, user_id: uuid.UUID) -> MemberResponse:
+    async def add_member(self, group_id: uuid.UUID, email: str) -> MemberResponse:
         pass
 
     @abstractmethod

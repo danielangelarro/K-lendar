@@ -6,14 +6,15 @@ from fastapi import HTTPException
 from app.application.repositories.event_repository import IEventRepository
 from app.domain.models.enum import EventStatus
 from app.domain.models.schemma import EventCreate, EventResponse
-from app.infrastructure.sqlite.tables import Event, UserEvent
+from app.infrastructure.sqlite.tables import Event, Group, Member, Notification, UserEvent
 from app.infrastructure.sqlite.database import get_db
-from app.infrastructure.repositories.mapper import EventMapper
+from app.infrastructure.repositories.mapper import EventMapper, GroupMapper
 from sqlalchemy.future import select
 
 
 class EventRepository(IEventRepository):
     mapper = EventMapper()
+    group_mapper = GroupMapper()
 
     async def create(self, event_create: EventCreate) -> EventResponse:
         async with get_db() as db:
@@ -26,6 +27,7 @@ class EventRepository(IEventRepository):
                 user_id=str(event_create.creator_id),
                 event_id=str(event.id),
                 status=event_create.status,
+                group_id=str(event_create.group_id),
             ))
 
             try:
@@ -40,15 +42,32 @@ class EventRepository(IEventRepository):
                 await db.rollback()
                 raise e
     
-    async def asign_event(self, event_id: str, user_id: str) -> None:
+    async def asign_event(self, event_id: str, user_id: str, group_id: str) -> None:
         async with get_db() as db:
+            await db.begin()
+
             user_event = UserEvent(
                 user_id=user_id,
                 event_id=event_id,
-                status=EventStatus.PENDING,
+                status=EventStatus.PENDING.value,
+                group_id=group_id,
+            )
+
+            result = await db.execute(select(Event).where(Event.id == str(event_id)))
+            event = result.scalars().first()
+
+            result = await db.execute(select(Group).where(Group.id == str(group_id)))
+            group = result.scalars().first()
+
+            notification = Notification(
+                recipient=user_id,
+                sender=user_id,
+                event=event_id,
+                message=f'New event "{event.title}" assign in {group.group_name}.',
             )
 
             db.add(user_event)
+            db.add(notification)
 
             try:
                 await self.commit(db)
@@ -74,16 +93,29 @@ class EventRepository(IEventRepository):
 
     async def get_by_user_id(self, user_id: uuid.UUID) -> List[EventResponse]:
         async with get_db() as db:
-            result = await db.execute(select(Event).where(Event.creator == str(user_id)))
+            result = await db.execute(
+                select(Event)
+                .join(UserEvent, Event.id == UserEvent.event_id)
+                .where(UserEvent.user_id == str(user_id))
+            )
             
-            events = result.scalars().all()
+            results = result.scalars().all()
+            events = []
             
-            for i, event in enumerate(events):
-                result_event_status = await db.execute(select(UserEvent).where(UserEvent.event_id == event.id))
+            for item in results:
+                result_event_status = await db.execute(select(UserEvent).where(UserEvent.event_id == item.id))
                 event_status = result_event_status.scalars().first()
                 
-                events[i] = self.mapper.to_entity(event)
-                events[i].status = event_status.status
+                result = await db.execute(select(Group).where(Group.id == event_status.group_id))
+                group = result.scalars().first()
+
+                event = self.mapper.to_entity(item)
+                event.status = event_status.status
+
+                if group:
+                    event.group = self.group_mapper.to_entity(group)
+
+                events.append(event)
             
             return events
 

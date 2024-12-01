@@ -57,6 +57,7 @@ class GroupResponse(BaseModelSchema):
     owner_username: Optional[str] = ""
     cant_members: Optional[int] = 0
     description: Optional[str]
+    is_my: Optional[bool] = False
 
 
 class EventCreate(BaseModelSchema):
@@ -106,8 +107,9 @@ class MemberResponse(BaseModelSchema):
 class NotificationResponse(BaseModelSchema):
     id: uuid.UUID
     recipient: uuid.UUID
-    sender: uuid.UUID
-    event: uuid.UUID
+    sender: Optional[uuid.UUID] = None
+    event: Optional[uuid.UUID] = None
+    message: str
     is_read: bool
 
 

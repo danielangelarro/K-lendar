@@ -68,7 +68,7 @@ const TableThree = ({tasks, del, edit, filtrar}: props) => {
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
                     <p className="text-black dark:text-white">
-                      {taskItem.group != null ? taskItem.group : '-'}
+                      {taskItem.group != null ? taskItem.group.name : '-'}
                     </p>
                   </td>
                   <td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
