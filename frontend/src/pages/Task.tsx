@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import TableThree from '../components/Tables/TableThree';
 import Sucessfully from '../components/Alerts/Sucessfully';
@@ -6,17 +7,20 @@ import TaskForm from '../components/Forms/TaskForm';
 import { Task } from '../types/task';
 import Loader from '../common/Loader';
 
-import { isCollitionDateRanges, Range } from './Calendar';
 import api from '../api/axios'; // Asegúrate de importar tu configuración de axios
 import { useAuthContext } from '../context/AuthContext'; // Importa el contexto de autenticación
 
+
 const TaskPage = () => {
+  const params = useParams()
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [modalSuccessfully, setModalSuccessfully] = useState<boolean>(false);
   const [msgSuccessfully, setMsgSuccessfully] = useState<string>('');
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
   const [modalEditTask, setModalEditTask] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const filterStartDate = params.filterDate
 
   // Obtén el usuario del contexto de autenticación
   const { user } = useAuthContext();
@@ -146,7 +150,6 @@ const TaskPage = () => {
             set={setModalEditTask}
             edit={end_edit} 
             old_task={selectedTask} 
-            set={setModalEditTask}
             header={selectedTask ? 'Edit Task' : 'Create Task'}
           />
         </div>
@@ -160,6 +163,7 @@ const TaskPage = () => {
               del={del} 
               tasks={tasks} 
               edit={start_edit}
+              filterStartDate={filterStartDate}
             />
             <button 
               onClick={clickCreate} 

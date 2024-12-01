@@ -108,7 +108,7 @@ function App() {
             }
           />
           <Route
-            path="/task"
+            path="/task/:filterDate"
             element={
               <DefaultLayout>
                 <PageTitle title="Tasks | TailAdmin - Tailwind CSS Admin Dashboard Template" />
