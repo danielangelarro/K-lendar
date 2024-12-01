@@ -112,6 +112,8 @@ class NotificationResponse(BaseModelSchema):
     event: Optional[uuid.UUID] = None
     message: str
     is_read: bool
+    priority: bool = True
+    date: datetime
 
 
 class AgendaEventResponse(BaseModelSchema):

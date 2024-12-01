@@ -51,7 +51,7 @@ const TableTwo = ({groupes, edit, del, vueUsersOfGroup}: props) => {
           <div className="col-span-1 flex items-center">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <p className="text-sm text-black dark:text-white">
-                {group.is_my ? '⭐' : ''}
+                {group.is_my ? '👑' : '🔹'}
               </p>
             </div>
           </div>

@@ -45,7 +45,7 @@ const AssignParentGroupForm: React.FC<AssignParentGroupFormProps> = ({ currentGr
         >
           <option value="">None</option>
           {groups.map(group => (
-            <option key={group.id} value={group.id}>{group.name}</option>
+            <option key={group.id} value={group.id}>{group.is_my ? '👑' : '🔹'} {group.name}</option>
           ))}
         </select>
       </div>
