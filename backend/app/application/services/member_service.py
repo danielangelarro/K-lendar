@@ -18,7 +18,7 @@ class IMemberService(ABC):
         pass
 
     @abstractmethod
-    async def get_members(self, group_id: uuid.UUID) -> List[UserResponse]:
+    async def get_child_groups(self, group_id: uuid.UUID) -> List[UserResponse]:
         pass
 
     @abstractmethod

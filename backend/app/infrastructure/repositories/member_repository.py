@@ -1,9 +1,11 @@
+from collections import deque
 from typing import List
 import uuid
+from sqlalchemy.orm import aliased
 from sqlalchemy.future import select
 from app.application.repositories.member_repository import IMemberRepository
 from app.domain.models.schemma import MemberCreate, MemberResponse, UserResponse
-from app.infrastructure.sqlite.tables import Group, Member, Notification, User
+from app.infrastructure.sqlite.tables import Group, GroupHierarchy, Member, Notification, User
 from app.infrastructure.sqlite.database import get_db
 from app.infrastructure.repositories.mapper import MemberMapper, UserMapper
 
@@ -51,6 +53,42 @@ class MemberRepository(IMemberRepository):
 
             try:
                 return [self.user_mapper.to_entity(member) for member in members]
+            except Exception as e:
+                await db.rollback()
+                raise e
+    
+    async def get_child_groups(self, group_id: uuid.UUID) -> List[UserResponse]:
+         async with get_db() as db:
+            queue = deque([str(group_id)])
+            visited_groups = set()
+            all_group_ids = set()
+
+            while queue:
+                current_group_id = queue.popleft()
+
+                results = await db.execute(
+                    select(GroupHierarchy.child_group_id).where(GroupHierarchy.parent_group_id == str(current_group_id))
+                )
+                child_groups = results.scalars().all()
+
+                for child_group_id in child_groups:
+                    if child_group_id not in visited_groups:
+                        visited_groups.add(child_group_id)
+                        queue.append(child_group_id)
+
+                all_group_ids.add(current_group_id)
+
+            members_query = select(User).\
+                join(Member, User.id == Member.user_id).\
+                where(Member.group_id.in_(all_group_ids))
+
+            results = await db.execute(members_query)
+            members = results.scalars().all()
+            
+            unique_users = {member.id: member for member in members}
+
+            try:
+                return [self.user_mapper.to_entity(user) for user in unique_users.values()]
             except Exception as e:
                 await db.rollback()
                 raise e

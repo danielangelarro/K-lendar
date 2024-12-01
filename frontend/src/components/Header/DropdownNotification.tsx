@@ -7,7 +7,8 @@ interface Notification {
   id: string,
   title: string,
   message: string,
-  date: string
+  priority: boolean,
+  date: string,
 }
 
 
@@ -79,7 +80,7 @@ const DropdownNotification = () => {
                   <li key={notification.id}>
                     <Link
                       className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-                      to="#"
+                      to="/notification"
                     >
                       <p className="text-sm">
                         <span className="text-black dark:text-white">

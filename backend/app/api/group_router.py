@@ -56,6 +56,19 @@ async def update_group(group_id: uuid.UUID, group_update: GroupCreate, request: 
     return updated_group
 
 
+@router.put("/groups/parent/{group_id}/{parent_id}", response_model=GroupResponse)
+@require_authentication
+async def update_group_parent(group_id: uuid.UUID, parent_id: uuid.UUID, request: Request):
+    group_service: IGroupService = inject.instance(IGroupService)
+
+    updated_group = await group_service.update_group_parent(group_id, parent_id)
+    
+    if not updated_group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    return updated_group
+
+
 @router.delete("/groups/{group_id}")
 @require_authentication
 async def delete_group(group_id: uuid.UUID, request: Request):

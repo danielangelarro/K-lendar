@@ -15,6 +15,9 @@ class MemberService(IMemberService):
     
     async def get_members(self, group_id: uuid.UUID) -> List[UserResponse]:
         return await self.repo_instance.get_members(group_id)
-
+    
+    async def get_child_groups(self, group_id: uuid.UUID) -> List[UserResponse]:
+        return await self.repo_instance.get_child_groups(group_id)
+    
     async def remove_member(self, group_id: uuid.UUID, user_id: uuid.UUID) -> bool:
         return await self.repo_instance.remove_member(group_id, user_id)

@@ -31,5 +31,9 @@ class IGroupService(ABC):
         pass
 
     @abstractmethod
+    async def update_group_parent(self, group_id: uuid.UUID, parent_id: uuid.UUID) -> GroupResponse:
+        pass
+
+    @abstractmethod
     async def delete_group(self, group_id: uuid.UUID, user_id: uuid.UUID):
         pass

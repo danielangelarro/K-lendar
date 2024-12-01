@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Group } from "../../types/group";
 import CheckboxTwo from "../Checkboxes/CheckboxTwo";
+import AssignParentGroupForm from "./AssignParentGroupForm";
 
 type props = {
   edit: any;
@@ -24,6 +25,11 @@ const GroupForm = ({old_group, header, edit, set}: props) => {
   }
 
   return (
+    <>
+    { (header === "Edit Group") && (
+      <AssignParentGroupForm currentGroupId={old_group} set={set} />
+    )}
+
     <div className="gap-9">
       <div className="flex flex-col gap-9">
         <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -74,6 +80,8 @@ const GroupForm = ({old_group, header, edit, set}: props) => {
         </div>
       </div>
     </div>
+    
+    </>
   )
 }
 

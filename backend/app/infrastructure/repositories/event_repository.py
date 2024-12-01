@@ -3,13 +3,15 @@ from typing import List
 import uuid
 
 from fastapi import HTTPException
+from sqlalchemy import case
+from sqlalchemy.future import select
+
 from app.application.repositories.event_repository import IEventRepository
 from app.domain.models.enum import EventStatus
 from app.domain.models.schemma import EventCreate, EventResponse
 from app.infrastructure.sqlite.tables import Event, Group, Member, Notification, UserEvent
 from app.infrastructure.sqlite.database import get_db
 from app.infrastructure.repositories.mapper import EventMapper, GroupMapper
-from sqlalchemy.future import select
 
 
 class EventRepository(IEventRepository):
@@ -44,32 +46,35 @@ class EventRepository(IEventRepository):
     
     async def asign_event(self, event_id: str, user_id: str, group_id: str) -> None:
         async with get_db() as db:
-            await db.begin()
-
-            user_event = UserEvent(
-                user_id=user_id,
-                event_id=event_id,
-                status=EventStatus.PENDING.value,
-                group_id=group_id,
-            )
-
-            result = await db.execute(select(Event).where(Event.id == str(event_id)))
-            event = result.scalars().first()
-
-            result = await db.execute(select(Group).where(Group.id == str(group_id)))
-            group = result.scalars().first()
-
-            notification = Notification(
-                recipient=user_id,
-                sender=user_id,
-                event=event_id,
-                message=f'New event "{event.title}" assign in {group.group_name}.',
-            )
-
-            db.add(user_event)
-            db.add(notification)
-
             try:
+                await db.begin()
+
+                user_event = UserEvent(
+                    user_id=user_id,
+                    event_id=event_id,
+                    status=EventStatus.PENDING.value,
+                    group_id=group_id,
+                )
+
+                result = await db.execute(select(Event).where(Event.id == str(event_id)))
+                event = result.scalars().first()
+
+                result = await db.execute(select(Group).where(Group.id == str(group_id)))
+                group = result.scalars().first()
+
+                is_owner = event.creator == group.owner_id
+
+                notification = Notification(
+                    recipient=user_id,
+                    sender=user_id,
+                    event=event_id,
+                    priority=is_owner,
+                    message=f'New event "{event.title}" assign in {group.group_name}.',
+                )
+
+                db.add(user_event)
+                db.add(notification)
+
                 await self.commit(db)
                 await self.refresh(db, user_event)
             except Exception as e:
