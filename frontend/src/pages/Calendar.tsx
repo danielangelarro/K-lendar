@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Loader from "../common/Loader";
+import api from '../api/axios'; // Asegúrate de importar tu configuración de axios
+import { Task } from "../types/task";
 
 export type Range = {
     start_time: Date;
@@ -38,7 +41,8 @@ export default function component() {
     const [ selectedDate, setSelectedDate ] = useState<Date>(new Date());
     const [ month, setMonth ] = useState<number>(selectedDate.getMonth())
     const [ year, setYear ] = useState<number>(selectedDate.getFullYear())
-    const [ modal, setModal ] = useState<boolean>(false)
+    // const [ modal, setModal ] = useState<boolean>(false)
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
     useEffect(() => {
         generateCalendar()
@@ -52,7 +56,8 @@ export default function component() {
         });
     },[month])
 
-    function generateCalendar() {
+    async function generateCalendar() {
+        setIsLoading(true);
         const calendarElement = document.getElementById('calendar');
         const currentMonthElement = document.getElementById('currentMonth');
         
@@ -68,24 +73,37 @@ export default function component() {
                 const emptyDayElement = document.createElement('div');
                 calendarElement.appendChild(emptyDayElement);
             }
-        
-            for (let day = 1; day <= daysInMonth; day++) {
+
+            try {
+              const response = await api.get('/events');
+              const tasks: Task[] = response.data;
+
+              for (let day = 1; day <= daysInMonth; day++) {
                 const dayElement = document.createElement('div');
                 dayElement.className = 'text-center py-2 border cursor-pointer';
                 dayElement.id = `${day}`
                 dayElement.innerText = `${day}`;
-
-                timeData.map(range => {
+                
+                tasks.map(task => {
                     if (isCollitionDateRanges({
                         start_time: new Date(year,month,day),
                         end_time: new Date(year,month,day,23,59,59),
-                    }, range)) {
+                    }, 
+                    {
+                        start_time: task.start_time,
+                        end_time: task.end_time,
+                    })) {
                         dayElement.classList.add('bg-blue-500', 'text-white');
                     }
                 })
                 
                 calendarElement.appendChild(dayElement);
+              }
+            } catch (error) {
+              console.error('Error al obtener tareas:', error);
             }
+            
+            setIsLoading(false);
         }
     }
     
@@ -104,6 +122,10 @@ export default function component() {
             setYear(year + 1);
         }
     }
+
+    if (isLoading) {
+        return <Loader />;
+      }
     
     return (
         <div className="bg-gray-100 flex items-center justify-center h-screen">
@@ -126,7 +148,7 @@ export default function component() {
                     <div className="grid grid-cols-7 gap-2 p-4" id="calendar">
                         {/* <!-- Calendar Days Go Here --> */} 
                     </div>
-                    {modal && (
+                    {/* {modal && (
                         <div id="myModal" className="modal fixed inset-0 flex items-center justify-center z-50">
                             <div className="modal-overlay absolute inset-0 bg-black opacity-50"></div>
                             
@@ -142,7 +164,7 @@ export default function component() {
                                 </div>
                             </div>
                         </div>
-                    )}
+                    )} */}
                 </div>
             </div>
         </div>
