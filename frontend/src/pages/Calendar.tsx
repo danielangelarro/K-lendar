@@ -49,10 +49,6 @@ export default function component() {
         });
     },[month])
 
-    // const filteredEvents = taskData.filter(event => 
-    //   isDateInRange(event.start_time, new Date(year, month, 1), new Date(year, month + 1, 0))
-    // );
-
     function generateCalendar() {
         const calendarElement = document.getElementById('calendar');
         const currentMonthElement = document.getElementById('currentMonth');
