@@ -55,7 +55,7 @@ class GroupRepository(IGroupRepository):
                     func.count(Member.user_id).label('member_count')
                 )
                 .outerjoin(Member, Member.group_id == Group.id)
-                .where(Group.owner_id == str(user.id))
+                .where(Member.user_id == str(user.id))
                 .group_by(Group.id)
             )
             
@@ -66,6 +66,7 @@ class GroupRepository(IGroupRepository):
                 response.append(self.mapper.to_entity(group))
                 response[-1].cant_members = member_count
                 response[-1].owner_username = user.username
+                response[-1].is_my = group.owner_id == str(user.id)
             
             return response
 
@@ -86,6 +87,9 @@ class GroupRepository(IGroupRepository):
                 if not group:
                     raise HTTPException(status_code=404, detail="Group not found")
                 
+                if group.owner_id != str(group_data.owner.id):
+                    raise HTTPException(status_code=403, detail="You are not the owner of this group")
+                
                 group.group_name = group_data.name
                 group.description = group_data.description
 
@@ -99,7 +103,7 @@ class GroupRepository(IGroupRepository):
             finally:
                 await db.close()
     
-    async def delete(self, group_id: uuid.UUID):
+    async def delete(self, group_id: uuid.UUID, user_id: uuid.UUID):
         async with get_db() as db:
             try:
                 await db.begin()
@@ -109,6 +113,9 @@ class GroupRepository(IGroupRepository):
                 if not group:
                     raise HTTPException(status_code=404, detail="Group not found")
                 
+                if group.owner_id != str(user_id):
+                    raise HTTPException(status_code=403, detail="You are not the owner of this group")
+
                 result_members = await db.execute(select(Member).where(Member.group_id == str(group_id)))
                 members = result_members.scalars().all()
                 

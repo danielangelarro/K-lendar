@@ -120,7 +120,7 @@ const GroupPage = () => {
             )}
 
             {userModal && groupSelected && (
-                <TableOne back={setUserModal} userData={users} del={delUserOfGroup} groupId={groupSelected.id} />
+                <TableOne back={setUserModal} userData={users} del={delUserOfGroup} groupId={groupSelected.id} is_owner={groupSelected.is_my}/>
             )} 
             {modal && (
                 <GroupForm set={setModal} edit={endEditGroup} old_group={groupSelected} header={groupSelected ? "Edit Group" : "Create Group"} />

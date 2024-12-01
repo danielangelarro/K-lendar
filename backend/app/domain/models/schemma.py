@@ -57,6 +57,7 @@ class GroupResponse(BaseModelSchema):
     owner_username: Optional[str] = ""
     cant_members: Optional[int] = 0
     description: Optional[str]
+    is_my: Optional[bool] = False
 
 
 class EventCreate(BaseModelSchema):
