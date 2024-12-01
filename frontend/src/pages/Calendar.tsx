@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export type Range = {
     start_time: Date;
@@ -30,6 +31,8 @@ const timeData: Range[] = [
   }
 
 export default function component() {
+    const nav = useNavigate()
+
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const [ selectedDate, setSelectedDate ] = useState<Date>(new Date());
@@ -44,7 +47,7 @@ export default function component() {
             dayElement.addEventListener('click', () => {
                 const day = parseInt(dayElement.id);
                 setSelectedDate(new Date(year, month, day));
-                setModal(true)
+                nav(`/task/${day}`)
             });
         });
     },[month])
