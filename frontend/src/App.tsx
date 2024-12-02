@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuthContext } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import Loader from './common/Loader';
 import PageTitle from './components/PageTitle';
@@ -41,6 +43,8 @@ function App() {
     <Loader />
   ) : (
     <AuthProvider>
+        <ToastContainer />
+        
         <Routes>
           <Route
             path="/"

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -14,6 +15,28 @@ api.interceptors.request.use(
     return config;
   },
   error => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor para manejar respuestas
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response) {
+      const message = error.response.data.detail || "Ocurrió un error inesperado.";
+      // Aquí puedes usar los componentes de Warning o Sucessfully
+      if (error.response.status === 200) {
+        // Mostrar mensaje de éxito
+        toast.success(message);
+      } else {
+        // Mostrar mensaje de advertencia
+        toast.warn(message);
+      }
+    } else {
+      // Error de red o de configuración
+      toast.error("Error de conexión con el servidor.");
+    }
     return Promise.reject(error);
   }
 );
