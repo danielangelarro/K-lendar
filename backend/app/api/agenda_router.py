@@ -9,6 +9,15 @@ from app.domain.models.schemma import UserAgendaResponse
 router = APIRouter()
 
 
+@router.get("/agendas/{start_date}/{end_date}", response_model=UserAgendaResponse)
+@require_authentication
+async def get_user_agenda_current_user(start_date: datetime, end_date: datetime, request: Request):
+    agenda_service: IAgendaService = inject.instance(IAgendaService)
+    current_user = request.state.current_user
+
+    return await agenda_service.get_user_agenda(current_user.id, start_date, end_date)
+
+
 @router.get("/agendas/{user_id}/{start_date}/{end_date}", response_model=UserAgendaResponse)
 @require_authentication
 async def get_user_agenda(user_id: uuid.UUID, start_date: datetime, end_date: datetime, request: Request):
@@ -21,7 +30,7 @@ async def get_user_agenda(user_id: uuid.UUID, start_date: datetime, end_date: da
     return await agenda_service.get_user_agenda(user_id, start_date, end_date)
 
 
-@router.get("/agendas/group/{group_id}", response_model=list[UserAgendaResponse])
+@router.get("/agendas/group/{group_id}/{start_date}/{end_date}", response_model=list[UserAgendaResponse])
 @require_authentication
 async def get_group_agenda(group_id: uuid.UUID, start_date: datetime, end_date: datetime, request: Request):
     agenda_service: IAgendaService = inject.instance(IAgendaService)

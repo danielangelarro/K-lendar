@@ -5,8 +5,11 @@ interface Notification {
   id: string,
   title: string,
   message: string,
+  sender: string,
   priority: boolean,
+  event: any,
   date: string,
+  group: string,
 }
 
 type props = {
@@ -29,12 +32,28 @@ const NotificationsPage = ({items}: props) => {
     fetchNotifications();
   }, []);
 
-  function selection(sel: boolean, id: number) {
-    if (sel) {
-
+  async function selection(sel: boolean, item: Notification) {
+    switch (item.title) {
+      case "Event Notifications":
+        break;
+      case "Event Invitations":
+        if (sel) {
+          await api.post(`/events/${item.event}/accept`);
+        } else { 
+          await api.post(`/events/${item.event}/decline`);
+        }
+        break;
+      case "Group Notifications":
+        if (!sel) {
+          await api.delete(`/groups/${item.group}/${item.sender}/remove_member`);
+        }
+        break;
+      default:
+        break;
     }
     
-    setNotifications(notifications.filter(not => id != not.id))
+    await api.post("/notifications/mark_as_read/", [ item.id ]);
+    setNotifications(notifications.filter(not => item.id != not.id));
   }
 
   return (
@@ -45,16 +64,15 @@ const NotificationsPage = ({items}: props) => {
           <li key={index} className="flex items-center space-x-4">
             <span className="w-2 h-2 bg-gray-300 rounded-full mr-3"></span>
             <div className='border p-2 w-full'>
-              <p className="font-semibold text-lg">Notification</p>
-              {/* <p className="font-semibold text-lg">{item.title}</p> */}
+              <p className="font-semibold text-lg">{item.title}</p>
               <p className="text-sm text-gray-600">{item.message}</p>
 
-              {( !item.priority &&
-                <div className='flex'>
-                  <button className='inline-flex items-center rounded font-medium m-4 px-10 py-4 justify-center bg-blue-500 w-24 h-8 p-2 hover:bg-opacity-90 lg:px-8 xl:px-10' onClick={() => selection(true, item.id)}>Accept</button>
-                  <button className='inline-flex items-center rounded font-medium m-4 px-10 py-4 justify-center bg-blue-500 w-24 h-8 p-2 hover:bg-opacity-90 lg:px-8 xl:px-10' onClick={() => selection(false, item.id)}>Delete</button>
-                </div>
-              )}
+              
+              <div className='flex'>
+                <button className='inline-flex items-center rounded font-medium m-4 px-10 py-4 justify-center bg-blue-500 w-24 h-8 p-2 hover:bg-opacity-90 lg:px-8 xl:px-10' onClick={() => selection(true, item)}>Accept</button>
+                <button className='inline-flex items-center rounded font-medium m-4 px-10 py-4 justify-center bg-blue-500 w-24 h-8 p-2 hover:bg-opacity-90 lg:px-8 xl:px-10' onClick={() => selection(false, item)}>Delete</button>
+              </div>
+              
             </div>
           </li>
         ))}

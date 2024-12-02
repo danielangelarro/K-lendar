@@ -1,11 +1,15 @@
+import asyncio
 from typing import List
 import uuid
 from fastapi import HTTPException
+from fastapi import BackgroundTasks
 import inject
 
+from app.application.repositories.invitation_repository import IInvitationRepository
 from app.application.services.agenda_service import IAgendaService
 from app.application.services.event_service import IEventService
 from app.application.repositories.event_repository import IEventRepository
+from app.application.services.invitation_service import IInvitationService
 from app.application.services.member_service import IMemberService
 from app.application.services.notification_service import INotificationService
 from app.domain.models.schemma import EventCreate, EventResponse
@@ -13,9 +17,16 @@ from app.domain.models.schemma import EventCreate, EventResponse
 
 class EventService(IEventService):
     repo_instance: IEventRepository = inject.attr(IEventRepository)
+    repo_invitation: IInvitationRepository = inject.attr(IInvitationRepository)
     notification_service: INotificationService = inject.attr(INotificationService)
     member_service: IMemberService = inject.attr(IMemberService)
     agenda_service: IAgendaService = inject.attr(IAgendaService)
+    invitation_service: IInvitationService = inject.attr(IInvitationService)
+
+    async def validate_event(self, event_id, group_members):
+        # await asyncio.sleep(30 * 60)  # 30 minutos en segundos
+        await asyncio.sleep(10)  # 30 minutos en segundos
+        await self.repo_invitation.validation_event_in_group(event_id, group_members)
 
     async def create_event(self, event: EventCreate) -> EventResponse:
         # Verificamos la disponibilidad del usuario que crea el evento
@@ -28,7 +39,7 @@ class EventService(IEventService):
         # Si el usuario está disponible, creamos el evento
         return await self.repo_instance.create(event)
 
-    async def create_event_group(self, event: EventCreate) -> EventResponse:
+    async def create_event_group(self, event: EventCreate, background_tasks: BackgroundTasks) -> EventResponse:
         # Obtenemos los miembros del grupo
         group_members = await self.member_service.get_members(event.group_id)
 
@@ -43,14 +54,22 @@ class EventService(IEventService):
             raise HTTPException(status_code=400, detail=f"Los siguientes usuarios no pueden asistir: {unavailable_users}")
 
         created_event = await self.repo_instance.create(event)
+        background_tasks.add_task(self.validate_event, created_event.id, group_members)
 
-        for member in group_members:
-            if member.id != event.creator_id:
-                await self.repo_instance.asign_event(str(created_event.id), str(member.id), str(event.group_id))
+        if event.by_owner:
+            for member in group_members:
+                if member.id != event.creator_id:
+                    await self.repo_instance.asign_event(str(created_event.id), str(member.id), str(event.group_id))
+        else:
+            await self.invitation_service.invite_users(
+                event_id=created_event.id, 
+                user_ids=[member.id for member in group_members if member.id != event.creator_id],
+                group_id=event.group_id
+            )
 
         return created_event
 
-    async def create_event_hierarchical(self, event: EventCreate) -> EventResponse:
+    async def create_event_hierarchical(self, event: EventCreate, background_tasks: BackgroundTasks) -> EventResponse:
         # Obtenemos los miembros del grupo y sus grupos hijos
         child_group_members = await self.member_service.get_child_groups(event.group_id)
 
@@ -67,10 +86,18 @@ class EventService(IEventService):
             raise HTTPException(status_code=400, detail=f"Los siguientes usuarios no pueden asistir: {unavailable_users}")
 
         created_event = await self.repo_instance.create(event)
+        background_tasks.add_task(self.validate_event, created_event.id, group_members)
 
-        for member in child_group_members:
-            if member.id != event.creator_id:
-                await self.repo_instance.asign_event(str(created_event.id), str(member.id), str(event.group_id))
+        if event.by_owner:
+            for member in child_group_members:
+                if member.id != event.creator_id:
+                    await self.repo_instance.asign_event(str(created_event.id), str(member.id), str(event.group_id))
+        else:
+            await self.invitation_service.invite_users(
+                event_id=created_event.id, 
+                user_ids=[member.id for member in child_group_members if member.id != event.creator_id],
+                group_id=event.group_id
+            )
 
         return created_event
 

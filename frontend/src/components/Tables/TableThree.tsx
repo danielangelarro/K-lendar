@@ -30,9 +30,9 @@ const TableThree = ({tasks, del, edit, filtrar, filterStartDate}: props) => {
             </label>
             <DatePickerOne date={new Date(filterEndTime.getFullYear(), filterEndTime.getMonth(), filterEndTime.getDate(), filterEndTime.getHours() - 5, filterEndTime.getMinutes()).toISOString().slice(0,16)} set={setFilterEndTime}/>
           </div>
-            <button onClick={() => filtrar(filterStartTime, filterEndTime)} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
-              Filtrar
-            </button>
+          <button onClick={() => filtrar(filterStartTime, filterEndTime)} className="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 m-5">
+            Filtrar
+          </button>
           
 
           <table className="w-full table-auto">

@@ -18,7 +18,6 @@ const GroupPage = () => {
     const [msgSuccessfully, setMsgSuccessfully] = useState<string>('');
 
     useEffect(() => {
-        // Cargar usuarios y grupos al montar el componente
         fetchGroups();
     }, []);
 
