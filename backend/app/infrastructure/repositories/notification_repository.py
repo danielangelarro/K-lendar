@@ -7,7 +7,7 @@ from app.infrastructure.repositories.mapper import NotificationMapper
 from app.infrastructure.sqlite.tables import Notification
 from app.infrastructure.sqlite.database import get_db
 from sqlalchemy.future import select
-from sqlalchemy import update
+from sqlalchemy import update, and_
 
 
 class NotificationRepository(INotificationRepository):
@@ -15,21 +15,30 @@ class NotificationRepository(INotificationRepository):
 
     async def get_by_recipient(self, recipient_id: uuid.UUID) -> List[NotificationResponse]:
         async with get_db() as db:
-            result = await db.execute(select(Notification).where(Notification.recipient == str(recipient_id)))
+            result = await db.execute(
+                select(Notification)
+                .where(and_(
+                    Notification.recipient == str(recipient_id),
+                    Notification.is_read == False
+                ))
+            )
             notifications = result.scalars().all()
             return [self.mapper.to_entity(notification) for notification in notifications]
 
-    async def mark_as_read(self, notification_id: uuid.UUID) -> None:
+    async def mark_as_read(self, notification_ids: List[uuid.UUID]) -> None:
         async with get_db() as db:
-            notification = await db.execute(select(Notification).where(Notification.id == str(notification_id)))
-            notification = notification.scalars().first()
-            if notification:
-                notification.is_read = True
-                
-                try:
-                    await self.commit(db)
-                except Exception as e:
-                    await db.rollback()
-                    raise e
-            else:
-                raise Exception("Notification not found")
+            await db.begin()
+
+            for notification in notification_ids:
+                notification = await db.execute(select(Notification).where(Notification.id == str(notification)))
+                notification = notification.scalars().first()
+                if notification:
+                    notification.is_read = True
+                    
+                    try:
+                        await self.commit(db)
+                    except Exception as e:
+                        await db.rollback()
+                        raise e
+                else:
+                    raise Exception("Notification not found")

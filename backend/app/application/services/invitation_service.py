@@ -10,7 +10,7 @@ class IInvitationService(ABC):
     repo_instance: BaseRepository = None
 
     @abstractmethod
-    async def invite_users(self, event_id: uuid.UUID, user_ids: List[uuid.UUID]) -> None:
+    async def invite_users(self, event_id: uuid.UUID, user_ids: List[uuid.UUID], group_id: uuid.UUID) -> None:
         pass
 
     @abstractmethod

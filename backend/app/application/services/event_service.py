@@ -2,6 +2,8 @@ from typing import List
 import uuid
 
 from abc import ABC, abstractmethod
+
+from fastapi import BackgroundTasks
 from app.application.base_repository import BaseRepository
 
 from app.domain.models.schemma import EventCreate
@@ -16,11 +18,11 @@ class IEventService(ABC):
         pass
 
     @abstractmethod
-    async def create_event_group(self, event: EventCreate) -> EventResponse:
+    async def create_event_group(self, event: EventCreate, background_tasks: BackgroundTasks) -> EventResponse:
         pass
 
     @abstractmethod
-    async def create_event_hierarchical(self, event: EventCreate) -> EventResponse:
+    async def create_event_hierarchical(self, event: EventCreate, background_tasks: BackgroundTasks) -> EventResponse:
         pass
 
     @abstractmethod

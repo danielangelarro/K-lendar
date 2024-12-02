@@ -2,7 +2,7 @@ from typing import List
 import uuid
 from app.application.base_repository import BaseMapper
 from app.domain.models.enum import EventStatus
-from app.domain.models.schemma import AgendaEventResponse, MemberCreate, MemberResponse, NotificationResponse, UserCreate
+from app.domain.models.schemma import EventResponse, MemberCreate, MemberResponse, NotificationResponse, UserCreate
 from app.domain.models.schemma import UserResponse
 from app.domain.models.schemma import EventCreate
 from app.domain.models.schemma import EventResponse
@@ -105,20 +105,8 @@ class NotificationMapper(BaseMapper):
             is_read=notification.is_read,
             priority=notification.priority if notification.priority is not None else True,
             date=notification.created_at,
-        )
-
-    def to_table(self, entity):
-        raise NotImplementedError
-
-
-class AgendaMapper(BaseMapper):
-    def to_entity(self, event: Event) -> AgendaEventResponse:
-        return AgendaEventResponse(
-            id=uuid.UUID(event.id),
-            title=event.title,
-            description=event.description,
-            start_time=event.start_datetime,
-            end_time=event.end_datetime,
+            title=notification.title if notification.title else "Info",
+            event=notification.event,
         )
 
     def to_table(self, entity):

@@ -28,7 +28,8 @@ class MemberRepository(IMemberRepository):
             notification = Notification(
                 recipient=user.id,
                 sender=group.owner_id,
-                message=f"You have been added to {group.group_name} group.",
+                title="Group Notifications",
+                message=f"You have been added to {group.group_name} group. Do you want to stay or leave?",
             )
             
             db.add(member)
