@@ -1,14 +1,19 @@
-FROM python:3.12-slim AS base
+FROM python:3.12-alpine AS base
 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock* ./
-RUN pip install --no-cache-dir poetry
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-interaction
+RUN pip install poetry
 
-RUN alembic upgrade head
+COPY pyproject.toml poetry.lock* ./
+
+RUN poetry config virtualenvs.create true \
+    && poetry config virtualenvs.in-project true \
+    && poetry install --no-interaction
 
 COPY . .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENV PATH="/app/.venv/bin:$PATH"
+
+RUN rm -rf database.sqlite && alembic upgrade head
+
+CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
