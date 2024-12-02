@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuthContext } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import Loader from './common/Loader';
 import PageTitle from './components/PageTitle';
@@ -9,8 +11,6 @@ import SignUp from './pages/Authentication/SignUp';
 import Calendar from './pages/Calendar';
 import FormElements from './pages/Form/FormElements';
 import Profile from './pages/Profile';
-import Alerts from './pages/UiElements/Alerts';
-import Buttons from './pages/UiElements/Buttons';
 import DefaultLayout from './layout/DefaultLayout';
 import Group from './pages/Group';
 import TaskPage from './pages/Task';
@@ -43,6 +43,8 @@ function App() {
     <Loader />
   ) : (
     <AuthProvider>
+        <ToastContainer />
+        
         <Routes>
           <Route
             path="/"
@@ -122,24 +124,6 @@ function App() {
               <DefaultLayout>
                 <PageTitle title="Tasks | TailAdmin - Tailwind CSS Admin Dashboard Template" />
                 <ProtectedRoute element={<TaskPage />} />
-              </DefaultLayout>
-            }
-          />
-          <Route
-            path="/ui/alerts"
-            element={
-              <DefaultLayout>
-                <PageTitle title="Alerts | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <ProtectedRoute element={<Alerts />} />
-              </DefaultLayout>
-            }
-          />
-          <Route
-            path="/ui/buttons"
-            element={
-              <DefaultLayout>
-                <PageTitle title="Buttons | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <ProtectedRoute element={<Buttons />} />
               </DefaultLayout>
             }
           />

@@ -58,7 +58,7 @@ const NotificationsPage = ({items}: props) => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h2 className="text-3xl font-bold mb-6">Notifications</h2>
+      <h2 className="text-3xl font-bold mb-6">Notificationes</h2>
       <ul className="space-y-8">
         {notifications.map((item, index) => (
           <li key={index} className="flex items-center space-x-4">

@@ -1,5 +1,6 @@
+from fastapi.responses import JSONResponse
 import inject
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.settings import configure as inject_configure
@@ -16,6 +17,24 @@ from app.infrastructure.sqlite.database import engine
 
 
 app = FastAPI()
+
+
+@app.middleware("http")
+async def error_handling_middleware(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except HTTPException as http_exception:
+        return JSONResponse(
+            status_code=http_exception.status_code,
+            content={"detail": http_exception.detail},
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": str(e)},
+        )
+
 
 app.add_middleware(
     CORSMiddleware,
