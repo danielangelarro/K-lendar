@@ -9,7 +9,7 @@ import PageTitle from './components/PageTitle';
 import SignIn from './pages/Authentication/SignIn';
 import SignUp from './pages/Authentication/SignUp';
 import Calendar from './pages/Calendar';
-import FormElements from './pages/Form/FormElements';
+// import FormElements from './pages/Form/FormElements';
 import Profile from './pages/Profile';
 import DefaultLayout from './layout/DefaultLayout';
 import Group from './pages/Group';
@@ -97,15 +97,6 @@ function App() {
               <DefaultLayout>
                 <PageTitle title="Profile | TailAdmin - Tailwind CSS Admin Dashboard Template" />
                 <ProtectedRoute element={<Profile />} />
-              </DefaultLayout>
-            }
-          />
-          <Route
-            path="/forms/form-elements"
-            element={
-              <DefaultLayout>
-                <PageTitle title="Form Elements | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <ProtectedRoute element={<FormElements />} />
               </DefaultLayout>
             }
           />
