@@ -7,4 +7,5 @@ export type Task = {
     start_time: Date;
     end_time: Date;
     event_type: string;
+    by_owner: boolean,
   };

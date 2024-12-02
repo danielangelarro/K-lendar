@@ -12,7 +12,8 @@ import { useAuthContext } from '../context/AuthContext'; // Importa el contexto 
 
 
 const TaskPage = () => {
-  const params = useParams()
+  const params = useParams();
+  const [filterStartDate, setFilterStartDate] = useState(params.filterDate || new Date().toISOString().split('T')[0]);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [modalSuccessfully, setModalSuccessfully] = useState<boolean>(false);
@@ -20,7 +21,6 @@ const TaskPage = () => {
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
   const [modalEditTask, setModalEditTask] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const filterStartDate = params.filterDate
 
   // Obtén el usuario del contexto de autenticación
   const { user } = useAuthContext();
@@ -115,15 +115,15 @@ const TaskPage = () => {
     try {
       // Pedir las tareas en ese rango
       setIsLoading(true);
-      const response = await api.get(`/agendas/${user}/${start_date}/${end_date}`);
+      const response = await api.get(`/agendas/${start_date.toISOString()}/${end_date.toISOString()}`);
       
       // Actualizar estado local
-      setTasks(response.data); 
+      setTasks(response.data.events); 
       setIsLoading(false);
     
     } catch (error) {
-      console.error('Error al eliminar tarea:', error);
-      setMsgSuccessfully("Error al eliminar tarea");
+      console.error('Error filtrar tareas:', error);
+      setMsgSuccessfully("Error to filter tasks.");
       setModalSuccessfully(true);
       setIsLoading(false);
     }

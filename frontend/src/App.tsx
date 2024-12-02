@@ -72,7 +72,7 @@ function App() {
             }
           />
           <Route
-            path="/timeline"
+            path="/timeline/:groupId"
             element={
               <DefaultLayout>
                 <PageTitle title="Group | TailAdmin - Tailwind CSS Admin Dashboard Template" />
@@ -109,6 +109,15 @@ function App() {
           />
           <Route
             path="/task/:filterDate"
+            element={
+              <DefaultLayout>
+                <PageTitle title="Tasks | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ProtectedRoute element={<TaskPage />} />
+              </DefaultLayout>
+            }
+          />
+          <Route
+            path="/task"
             element={
               <DefaultLayout>
                 <PageTitle title="Tasks | TailAdmin - Tailwind CSS Admin Dashboard Template" />

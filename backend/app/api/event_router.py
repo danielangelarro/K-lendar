@@ -2,7 +2,7 @@ import uuid
 import inject
 
 from typing import List
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from fastapi import Request
 from fastapi import HTTPException
 from app.api.decorators import require_authentication
@@ -16,7 +16,7 @@ router = APIRouter()
 
 @router.post("/events/create/", response_model=EventResponse)
 @require_authentication
-async def create_event(event_request: EventRequest, request: Request):
+async def create_event(event_request: EventRequest, background_tasks: BackgroundTasks, request: Request):
     group_service: IGroupService = inject.instance(IGroupService)
     event_service: IEventService = inject.instance(IEventService)
     group = None
@@ -38,6 +38,7 @@ async def create_event(event_request: EventRequest, request: Request):
         event_type=event_request.event_type,
         creator_id=current_user.id,
         group_id=group.id if group else None,
+        by_owner=event_request.by_owner,
         invitees=[]
     )
 
@@ -48,10 +49,10 @@ async def create_event(event_request: EventRequest, request: Request):
             response = await event_service.create_event(event_create)
             pass
         case EventType.GROUP:
-            response = await event_service.create_event_group(event_create)
+            response = await event_service.create_event_group(event_create, background_tasks)
             pass
         case EventType.HIERARCHICAL:
-            response = await event_service.create_event_hierarchical(event_create)
+            response = await event_service.create_event_hierarchical(event_create, background_tasks)
             pass
 
     return response

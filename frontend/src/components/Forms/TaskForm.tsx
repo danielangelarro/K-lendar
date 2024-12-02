@@ -46,6 +46,7 @@ const TaskForm = ({header, edit, old_task, set}: props) => {
   useEffect(() => {
     const g = groups.find(g => g.name === group);
     setWarning(g && !g.is_my);
+    setStatus("pending");
   }, [group]);
 
   function create() {
@@ -58,9 +59,10 @@ const TaskForm = ({header, edit, old_task, set}: props) => {
       end_time: endTime,
       event_type: eventType,
       group_name: group, 
+      by_owner: !warning
     }
 
-    edit(task)
+    edit(task);
   }
 
   return (
@@ -101,12 +103,15 @@ const TaskForm = ({header, edit, old_task, set}: props) => {
                   className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
                 ></textarea>
               </div>
-              <div className="mb-6">
-                <label className="mb-2.5 block text-black dark:text-white">
-                  Status
-                </label>
-                <SelectStatus value={status} set={setStatus}/>
-              </div>
+
+              { !warning && (
+                <div className="mb-6">
+                  <label className="mb-2.5 block text-black dark:text-white">
+                    Status
+                  </label>
+                  <SelectStatus value={status} set={setStatus}/>
+                </div>
+              )}
               
               <div className="mb-6">
                 <label className="mb-2.5 block text-black dark:text-white">

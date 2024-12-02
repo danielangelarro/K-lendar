@@ -71,6 +71,7 @@ class EventCreate(BaseModelSchema):
     creator_id: Optional[uuid.UUID] = None
     group_id: Optional[uuid.UUID] = None
     invitees: List[uuid.UUID] = []
+    by_owner: bool = True
 
 
 class EventRequest(BaseModel):
@@ -82,6 +83,7 @@ class EventRequest(BaseModel):
     start_time: datetime
     end_time: datetime
     group_name: Optional[str] = None
+    by_owner: bool = True
 
 
 class EventResponse(BaseModelSchema):
@@ -114,15 +116,12 @@ class NotificationResponse(BaseModelSchema):
     is_read: bool
     priority: bool = True
     date: datetime
+    title: str = "Info"
+    group: Optional[uuid.UUID] = None
 
-
-class AgendaEventResponse(BaseModelSchema):
-    title: str
-    description: str
-    start_time: datetime
-    end_time: datetime
 
 
 class UserAgendaResponse(BaseModelSchema):
     user_id: uuid.UUID
-    events: list[AgendaEventResponse]
+    name: str
+    events: list[EventResponse]

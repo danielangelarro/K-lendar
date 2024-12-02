@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { User } from '../../types/user';
 import api from '../../api/axios';
 
@@ -11,6 +12,8 @@ type props = {
 }
 
 const TableOne = ({userData, del, back, groupId, is_owner}: props) => {
+  const nav = useNavigate()
+
   const [ users, setUsers ] = useState<User[]>(userData);
 
   const [email, setEmail] = useState('');
@@ -47,14 +50,23 @@ const TableOne = ({userData, del, back, groupId, is_owner}: props) => {
           Back
         </button>
 
+        <div className='flex'>
+        <button
+            onClick={() => nav(`/timeline/${groupId}`)}
+            className="rounded inline-flex items-center justify-center bg-red py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
+            >
+          View Timeline of tasks
+        </button>
+
         {is_owner && (
           <button
-            onClick={() => setInviteModalOpen(true)}
-            className="rounded inline-flex items-center justify-center bg-success py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
-            >
+          onClick={() => setInviteModalOpen(true)}
+          className="ml-3 rounded inline-flex items-center justify-center bg-success py-4 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
+          >
             Add new user
           </button>
         )}
+        </div>
       </div>
 
       {inviteModalOpen && (

@@ -141,6 +141,7 @@ class Notification(SQLAlchemyBaseModel):
     message = Column(String(500), default="")
     is_read = Column(Boolean, default=False)
     priority = Column(Boolean, default=True)
+    title = Column(String(36), default="Info")
 
     recipient_rel = relationship('User', foreign_keys=[recipient], back_populates='received_notifications')
     sender_rel = relationship('User', foreign_keys=[sender], back_populates='sent_notifications')

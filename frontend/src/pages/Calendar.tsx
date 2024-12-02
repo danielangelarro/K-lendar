@@ -10,7 +10,7 @@ export type Range = {
 }
 
   export function isCollitionDateRanges(range1: Range, range2: Range): boolean {
-    if (range1.end_time < range2.start_time || range1.start_time >= range2.end_time ) return false;
+    if (range1.end_time <= range2.start_time || range1.start_time >= range2.end_time ) return false;
     return true;
   }
 
@@ -22,72 +22,82 @@ export default function component() {
     const [ selectedDate, setSelectedDate ] = useState<Date>(new Date());
     const [ month, setMonth ] = useState<number>(selectedDate.getMonth())
     const [ year, setYear ] = useState<number>(selectedDate.getFullYear())
-    // const [ modal, setModal ] = useState<boolean>(false)
+    const [ modal, setModal ] = useState<boolean>(false)
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
+    const [calendarHTML, setCalendarHTML] = useState<string>('');
+
     useEffect(() => {
-        generateCalendar()
+        const fetchCalendar = async () => {
+            setIsLoading(true);
+            const html = await generateCalendar();
+            setCalendarHTML(html);
+            setIsLoading(false);
+        };
+
+        fetchCalendar();
+    }, [year, month]); // Dependencias según sea necesario
+
+    useEffect(() => {
         const dayElements = document.querySelectorAll('.cursor-pointer');
+        
+        const handleDayClick = (day: number) => {
+            setSelectedDate(new Date(year, month, day));
+            nav(`/task/${new Date(year, month, day)}`);
+        };
+
         dayElements.forEach(dayElement => {
-            dayElement.addEventListener('click', () => {
-                const day = parseInt(dayElement.id);
-                setSelectedDate(new Date(year, month, day));
-                nav(`/task/${day}`)
-            });
+            const day = parseInt(dayElement.id);
+            dayElement.addEventListener('click', () => handleDayClick(day));
         });
-    },[month])
+
+        // Limpiar los event listeners al desmontar el componente o cambiar el mes
+        return () => {
+            dayElements.forEach(dayElement => {
+                dayElement.removeEventListener('click', () => handleDayClick(parseInt(dayElement.id)));
+            });
+        };
+    }, [calendarHTML]); // Ahora depende de calendarHTML
 
     async function generateCalendar() {
-        setIsLoading(true);
-        const calendarElement = document.getElementById('calendar');
-        const currentMonthElement = document.getElementById('currentMonth');
-        
         const firstDayOfMonth = new Date(year, month, 1);
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         
-        if (calendarElement && currentMonthElement) {
-            calendarElement.innerHTML = '';
-                
-            const firstDayOfWeek = firstDayOfMonth.getDay();
+        let calendarHTML = '';
         
-            for (let i = 0; i < firstDayOfWeek; i++) {
-                const emptyDayElement = document.createElement('div');
-                calendarElement.appendChild(emptyDayElement);
-            }
+        const firstDayOfWeek = firstDayOfMonth.getDay();
+        
+        // Generar espacios vacíos para los días que no pertenecen al mes
+        for (let i = 0; i < firstDayOfWeek; i++) {
+            calendarHTML += '<div></div>';
+        }
 
-            try {
-              const response = await api.get('/events');
-              const tasks: Task[] = response.data;
+        try {
+            const response = await api.get('/events');
+            const tasks: Task[] = response.data;
 
-              for (let day = 1; day <= daysInMonth; day++) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'text-center py-2 border cursor-pointer';
-                dayElement.id = `${day}`
-                dayElement.innerText = `${day}`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                let dayClass = 'text-center py-2 border cursor-pointer';
+                let dayElement = `<div class="${dayClass}" id="${day}">${day}</div>`;
                 
                 tasks.map(task => {
-                    if (isCollitionDateRanges({
-                        start_time: new Date(year,month,day),
-                        end_time: new Date(year,month,day,23,59,59),
-                    }, 
-                    {
-                        start_time: task.start_time,
-                        end_time: task.end_time,
-                    })) {
-                        dayElement.classList.add('bg-blue-500', 'text-white');
+                    if (isCollitionDateRanges(
+                        { start_time: new Date(year, month, day, 0, 0, 0), end_time: new Date(year, month, day, 23, 59, 59) }, 
+                        { start_time: new Date(task.start_time), end_time: new Date(task.end_time) }
+                    )) {
+                        dayElement = `<div class="${dayClass} bg-blue-500 text-white" id="${day}">${day}</div>`;
                     }
-                })
+                });
                 
-                calendarElement.appendChild(dayElement);
-              }
-            } catch (error) {
-              console.error('Error al obtener tareas:', error);
+                calendarHTML += dayElement;
             }
-            
-            setIsLoading(false);
+        } catch (error) {
+            console.error('Error al obtener tareas:', error);
         }
+
+        return calendarHTML; // Retornamos el HTML generado
     }
-    
+
     function previous() {
         setMonth(month - 1);
         if (month < 0) {
@@ -106,7 +116,7 @@ export default function component() {
 
     if (isLoading) {
         return <Loader />;
-      }
+    }
     
     return (
         <div className="bg-gray-100 flex items-center justify-center h-screen">
@@ -126,10 +136,14 @@ export default function component() {
                             </div>
                         ))}
                     </div>
-                    <div className="grid grid-cols-7 gap-2 p-4" id="calendar">
+                    <div 
+                        className="grid grid-cols-7 gap-2 p-4" 
+                        id="calendar"
+                        dangerouslySetInnerHTML={{ __html: calendarHTML }}
+                    >
                         {/* <!-- Calendar Days Go Here --> */} 
                     </div>
-                    {/* {modal && (
+                    {modal && (
                         <div id="myModal" className="modal fixed inset-0 flex items-center justify-center z-50">
                             <div className="modal-overlay absolute inset-0 bg-black opacity-50"></div>
                             
@@ -145,7 +159,7 @@ export default function component() {
                                 </div>
                             </div>
                         </div>
-                    )} */}
+                    )}
                 </div>
             </div>
         </div>

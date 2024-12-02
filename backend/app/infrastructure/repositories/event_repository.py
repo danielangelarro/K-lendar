@@ -69,7 +69,8 @@ class EventRepository(IEventRepository):
                     sender=user_id,
                     event=event_id,
                     priority=is_owner,
-                    message=f'New event "{event.title}" assign in {group.group_name}.',
+                    title="Event Notifications",
+                    message=f'New event "{event.title}" assign in {group.group_name} by admin.',
                 )
 
                 db.add(user_event)
@@ -136,7 +137,11 @@ class EventRepository(IEventRepository):
                 update_data = event_data.dict(exclude_unset=True)
             
                 for key, value in update_data.items():
-                    if hasattr(event, key):
+                    if key == "end_time":
+                        setattr(event, "end_datetime", value)
+                    elif key == "start_time":
+                        setattr(event, "start_datetime", value)
+                    elif hasattr(event, key):
                         if key == "event_type":
                             setattr(event, key, value.value)
                         else:
