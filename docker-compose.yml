@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  client1:
+    build:
+      context: ./frontend
+      dockerfile: client.Dockerfile
+    networks:
+      clients_network:
+        ipv4_address: 10.0.10.3
+    environment:
+      PYTHONUNBUFFERED: '1'
+    ports:
+      - "5173:5173"
+    cap_add:
+      - NET_ADMIN
+
+  client2:
+    build:
+      context: ./frontend
+      dockerfile: client.Dockerfile
+    networks:
+      clients_network:
+        ipv4_address: 10.0.10.2
+    environment:
+      PYTHONUNBUFFERED: '1'
+    ports:
+      - "5174:5173"
+    cap_add:
+      - NET_ADMIN
+
+  server1:
+    build:
+      context: ./backend
+      dockerfile: server.Dockerfile
+    networks:
+      servers_network:
+        ipv4_address: 10.0.11.3
+    environment:
+      PYTHONUNBUFFERED: '1'
+    ports:
+      - "8000:8000"
+    cap_add:
+      - NET_ADMIN
+
+  router:
+    build:
+      context: ./router
+      dockerfile: router.Dockerfile
+    networks:
+      clients_network:
+        ipv4_address: 10.0.10.100
+      servers_network:
+        ipv4_address: 10.0.11.100
+
+networks:
+  clients_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.10.0/24
+
+  servers_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.11.0/24

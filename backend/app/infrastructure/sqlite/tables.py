@@ -45,12 +45,12 @@ class User(SQLAlchemyBaseModel):
     email = Column(String(255), unique=True)
     password = Column(String(255), comment='Encrypted')
 
-    created_events = relationship('Event', back_populates='creator_rel', foreign_keys='Event.creator')
-    participations = relationship('UserEvent', back_populates='user_rel')
-    sent_notifications = relationship('Notification', back_populates='sender_rel', foreign_keys='Notification.sender')
-    received_notifications = relationship('Notification', back_populates='recipient_rel', foreign_keys='Notification.recipient')
-    memberships = relationship('Member', back_populates='user_rel')
-    owned_groups = relationship('Group', back_populates='owner')
+    created_events = relationship('Event', back_populates='creator_rel', foreign_keys='Event.creator', cascade="all, delete-orphan")
+    participations = relationship('UserEvent', back_populates='user_rel', cascade="all, delete-orphan")
+    sent_notifications = relationship('Notification', back_populates='sender_rel', foreign_keys='Notification.sender', cascade="all, delete-orphan")
+    received_notifications = relationship('Notification', back_populates='recipient_rel', foreign_keys='Notification.recipient', cascade="all, delete-orphan")
+    memberships = relationship('Member', back_populates='user_rel', cascade="all, delete-orphan")
+    owned_groups = relationship('Group', back_populates='owner', cascade="all, delete-orphan")
 
 
 class Event(SQLAlchemyBaseModel):
@@ -64,8 +64,8 @@ class Event(SQLAlchemyBaseModel):
     creator = Column(String(36), ForeignKey('users.id'), nullable=False)
     
     creator_rel = relationship('User', back_populates='created_events')
-    participations = relationship('UserEvent', back_populates='event_rel')
-    notifications = relationship('Notification', back_populates='event_rel')
+    participations = relationship('UserEvent', back_populates='event_rel', cascade="all, delete-orphan")
+    notifications = relationship('Notification', back_populates='event_rel', cascade="all, delete-orphan")
 
 
 class GroupHierarchy(SQLAlchemyBaseModel):
@@ -77,12 +77,16 @@ class GroupHierarchy(SQLAlchemyBaseModel):
     parent_group = relationship(
         'Group', 
         foreign_keys=[parent_group_id], 
-        back_populates='parent_hierarchies'
+        back_populates='parent_hierarchies',
+        cascade="all, delete-orphan",
+        single_parent=True
     )
     child_group = relationship(
         'Group', 
         foreign_keys=[child_group_id], 
-        back_populates='child_hierarchies'
+        back_populates='child_hierarchies',
+        cascade="all, delete-orphan",
+        single_parent=True
     )
 
 
@@ -94,17 +98,19 @@ class Group(SQLAlchemyBaseModel):
     owner_id = Column(String(36), ForeignKey('users.id'), nullable=False)
 
     owner = relationship("User", back_populates="owned_groups")
-    members = relationship('Member', back_populates='group_rel')
-    user_events = relationship('UserEvent', back_populates='group_rel')
+    members = relationship('Member', back_populates='group_rel', cascade="all, delete-orphan")
+    user_events = relationship('UserEvent', back_populates='group_rel', cascade="all, delete-orphan")
     parent_hierarchies = relationship(
         'GroupHierarchy', 
         foreign_keys=[GroupHierarchy.parent_group_id], 
-        back_populates='parent_group'
+        back_populates='parent_group',
+        cascade="all, delete-orphan"
     )
     child_hierarchies = relationship(
         'GroupHierarchy', 
         foreign_keys=[GroupHierarchy.child_group_id], 
-        back_populates='child_group'
+        back_populates='child_group',
+        cascade="all, delete-orphan"
     )
 
 

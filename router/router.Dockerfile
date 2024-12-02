@@ -5,4 +5,5 @@ RUN sysctl -p
 
 CMD /bin/sh
 
-cmd while true; do sleep 1; done
+# cmd while true; do sleep 1; done
+cmd ["tail", "-f", "/dev/null"]
