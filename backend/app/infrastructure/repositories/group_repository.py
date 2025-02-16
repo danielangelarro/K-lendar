@@ -3,23 +3,24 @@ from typing import List
 import uuid
 from fastapi import HTTPException
 
+from app.infrastructure.sqlite.utils import generate_unique_uuid
 from app.settings import settings
 from app.application.repositories.group_repository import IGroupRepository
-from app.domain.models.schemma import GroupCreate, UserResponse
+from app.domain.models.schemma import GroupCreate, MemberCreate, UserResponse
 from app.domain.models.schemma import GroupResponse
-from app.infrastructure.repositories.mapper import GroupMapper
+from app.infrastructure.repositories.mapper import GroupMapper, MemberMapper
 
 
 class GroupRepository(IGroupRepository):
     mapper = GroupMapper()
+    member_mapper = MemberMapper()
 
     async def create(self, group_create: GroupCreate) -> GroupResponse:
         group = self.mapper.to_table(group_create)
-        settings.node.store_key(f"groups:{group['id']}", json.dumps(group))
+        await settings.node.store_key(f"groups:{group['id']}", json.dumps(group))
 
-        member = {"user_id": str(group_create.owner.id), "group_id": group["id"]}
-        member_id = uuid.UUID()
-        settings.node.store_key(f"member:{member_id}", json.dumps(member))
+        member = self.member_mapper.to_table(MemberCreate(user_id=group_create.owner.id, group_id=group["id"]))
+        await settings.node.store_key(f"member:{member['id']}", json.dumps(member))
 
         query_payload = json.dumps(
             {"table": "member", "filters": {"group_id": str(group['id'])}}
@@ -34,7 +35,7 @@ class GroupRepository(IGroupRepository):
         return response
 
     async def get_by_id(self, group_id: uuid.UUID) -> GroupResponse:
-        group_json = settings.node.retrieve_key(f"groups:{group_id}")
+        group_json = await settings.node.retrieve_key(f"groups:{group_id}")
         if not group_json:
             return None
         group = json.loads(group_json)
@@ -52,7 +53,7 @@ class GroupRepository(IGroupRepository):
 
         for group_id in group_ids:
             # Obtener los datos del grupo desde Chord
-            group_json = settings.node.retrieve_key(f"groups:{group_id}")
+            group_json = await settings.node.retrieve_key(f"groups:{group_id}")
             if not group_json:
                 continue
             group = json.loads(group_json)
@@ -74,7 +75,7 @@ class GroupRepository(IGroupRepository):
 
             if hierarchy:
                 parent_group_id = hierarchy[0]["parent_group_id"]
-                parent_group_json = settings.node.retrieve_key(f"groups:{parent_group_id}")
+                parent_group_json = await settings.node.retrieve_key(f"groups:{parent_group_id}")
                 if parent_group_json:
                     parent_group = json.loads(parent_group_json)
                     group_entity.parent = parent_group["group_name"]
@@ -93,7 +94,7 @@ class GroupRepository(IGroupRepository):
 
     async def update(self, group_id: uuid.UUID, group_data: GroupCreate) -> GroupResponse:
         group_key = f"groups:{group_id}"
-        group_json = settings.node.retrieve_key(group_key)
+        group_json = await settings.node.retrieve_key(group_key)
 
         if not group_json:
             raise HTTPException(status_code=404, detail="Group not found")
@@ -105,32 +106,33 @@ class GroupRepository(IGroupRepository):
         group["group_name"] = group_data.name
         group["description"] = group_data.description
 
-        settings.node.store_key(group_key, json.dumps(group))
-        settings.node.store_key(f"group_name:{group_data.name}", json.dumps(group))
+        await settings.node.store_key(group_key, json.dumps(group))
+        await settings.node.store_key(f"group_name:{group_data.name}", json.dumps(group))
 
         return self.mapper.to_entity(group)
     
     async def update_parent(self, group_id: uuid.UUID, parent_group_id: uuid.UUID) -> GroupResponse:
-        group_json = settings.node.retrieve_key(f"groups:{group_id}")
+        group_json = await settings.node.retrieve_key(f"groups:{group_id}")
         if not group_json:
             raise HTTPException(status_code=404, detail="Group not found")
         
         group = json.loads(group_json)
-        parent_json = settings.node.retrieve_key(f"groups:{parent_group_id}")
+        parent_json = await settings.node.retrieve_key(f"groups:{parent_group_id}")
         
         if not parent_json:
             raise HTTPException(status_code=404, detail="Parent group not found")
         
         hierarchy = {
+            "id": generate_unique_uuid(parent_group_id, group_id),
             "parent_group_id": str(parent_group_id),
             "child_group_id": str(group_id)
         }
-        settings.node.store_key(f"group_hierarchy:{group_id}", json.dumps(hierarchy))
+        await settings.node.store_key(f"group_hierarchy:{hierarchy['id']}", json.dumps(hierarchy))
         
         return self.mapper.to_entity(group)
 
     async def delete(self, group_id: uuid.UUID, user_id: uuid.UUID):
-        group_json = settings.node.retrieve_key(f"groups:{group_id}")
+        group_json = await settings.node.retrieve_key(f"groups:{group_id}")
         if not group_json:
             raise HTTPException(status_code=404, detail="Group not found")
         group = json.loads(group_json)
@@ -138,7 +140,7 @@ class GroupRepository(IGroupRepository):
         if group["owner_id"] != str(user_id):
             raise HTTPException(status_code=403, detail="You are not the owner of this group")
         
-        settings.node.delete_key(f"groups:{group_id}")
+        await settings.node.delete_key(f"groups:{group_id}")
 
         # Remove members
         payload = {
@@ -150,7 +152,7 @@ class GroupRepository(IGroupRepository):
         if members_json:
             members = json.loads(members_json)
             for member in members:
-                settings.node.delete_key(f"member:{group_id}_{member['id']}")
+                await settings.node.delete_key(f"member:{member['id']}")
         
         # Remove hierachy
         payload = {
@@ -163,7 +165,7 @@ class GroupRepository(IGroupRepository):
             ghs = json.loads(members_json)
             
             for gh in ghs:
-                settings.node.delete_key(f"group_hierarchy:{gh['id']}")
+                await settings.node.delete_key(f"group_hierarchy:{gh['id']}")
         
         return {"message": "Group deleted successfully"}
         

@@ -5,8 +5,8 @@ from fastapi import APIRouter
 from sqlalchemy import select
 from app.settings import settings
 from app.domain.models.schemma import KeysPayload
-from backend.app.domain.distribute.chord import TABLE_MAP
-from backend.app.infrastructure.sqlite.database import get_db
+from app.domain.distribute.chord import TABLE_MAP
+from app.infrastructure.sqlite.database import get_db
 
 router = APIRouter()
 

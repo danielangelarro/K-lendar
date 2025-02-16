@@ -28,10 +28,10 @@ class NotificationRepository(INotificationRepository):
     async def mark_as_read(self, notification_ids: List[uuid.UUID]) -> None:
         for notif_id in notification_ids:
             key = f"notification:{notif_id}"
-            notif_json = settings.node.retrieve_key(key)
+            notif_json = await settings.node.retrieve_key(key)
             if notif_json:
                 notif = json.loads(notif_json)
                 notif["is_read"] = True
-                settings.node.store_key(key, json.dumps(notif))
+                await settings.node.store_key(key, json.dumps(notif))
             else:
                 raise Exception("Notification not found")

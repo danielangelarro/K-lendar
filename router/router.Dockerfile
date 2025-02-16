@@ -1,9 +1,9 @@
-from alpine
+from router:base
 
-run echo "net.ipv4.ip_forward=1" | tee -a /etc/sysctl.conf
-RUN sysctl -p
+copy route.sh /root/route.sh
 
-CMD /bin/sh
+copy multicast_proxy.py /root/multicast_proxy.py
 
-# cmd while true; do sleep 1; done
-cmd ["tail", "-f", "/dev/null"]
+run chmod +x /root/route.sh
+
+entrypoint /root/route.sh

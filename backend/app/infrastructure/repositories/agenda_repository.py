@@ -17,7 +17,7 @@ class AgendaRepository(IAgendaRepository):
         self, user_id: uuid.UUID, start_date: datetime, end_date: datetime
     ) -> UserAgendaResponse:
         # Recuperar la información del usuario desde el anillo
-        user_json = settings.node.retrieve_key(f"users:{user_id}")
+        user_json = await settings.node.retrieve_key(f"users:{user_id}")
         if not user_json:
             raise Exception("Usuario no encontrado")
         user = json.loads(user_json)
@@ -38,13 +38,13 @@ class AgendaRepository(IAgendaRepository):
         events = []
         for ev in events_list:
             # Recuperar el estado del evento (se asume que se almacena bajo "user_event:<event_id>")
-            ue_json = settings.node.retrieve_key(f"user_event:{ev['id']}")
+            ue_json = await settings.node.retrieve_key(f"user_event:{ev['id']}")
             if ue_json:
                 ue = json.loads(ue_json)
                 ev["status"] = ue.get("status")
                 group_id = ue.get("group_id")
                 if group_id:
-                    group_json = settings.node.retrieve_key(f"groups:{group_id}")
+                    group_json = await settings.node.retrieve_key(f"groups:{group_id}")
                     if group_json:
                         ev["group"] = json.loads(group_json)
             # Convertir el diccionario a entidad usando el mapper

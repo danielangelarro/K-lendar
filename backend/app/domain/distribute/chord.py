@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import socket
 import threading
 import time
@@ -9,7 +10,7 @@ from typing import List, Optional
 
 import requests
 
-from backend.app.infrastructure.sqlite.database import get_db
+from app.infrastructure.sqlite.database import get_db
 from sqlalchemy import select, and_
 from app.infrastructure.sqlite.tables import (
     User,
@@ -34,6 +35,8 @@ TABLE_MAP = {
 
 MULTICAST_GROUP = "224.0.0.1"
 PROXY_MULTICAST_PORT = 10000
+
+DELIMITER = '<<DELIM>>'
 
 # Códigos de operación (para comunicación entre nodos Chord)
 FIND_SUCCESSOR = 1
@@ -66,7 +69,7 @@ class ChordNodeReference:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.ip, self.port))
-                message = f"{op},{data if data is not None else ''}"
+                message = f"{op}{DELIMITER}{data if data is not None else ''}"
                 s.sendall(message.encode("utf-8"))
                 logging.info(f"Enviado: {message} a {self.ip}:{self.port}")
                 return s.recv(4096)
@@ -146,6 +149,45 @@ class ChordNode:
         self.db_lock = threading.Lock()
         logging.info(f"Inicializado ChordNode en {self.ip}:{self.port}")
 
+    def start_services(self):
+        """Inicia los hilos del protocolo Chord."""
+        logging.info("Iniciando servicios de Chord...")
+        threading.Thread(target=self.stabilize, daemon=True).start()
+        threading.Thread(target=self.fix_fingers, daemon=True).start()
+        threading.Thread(target=self.check_predecessor, daemon=True).start()
+        threading.Thread(target=self.start_server, daemon=True).start()
+        # threading.Thread(target=self.multicast_listener, daemon=True).start()
+        # threading.Thread(target=self.announce_self, daemon=True).start()
+    
+    def announce_self(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+        message = f'{self.ip},{self.port}'.encode()
+        while True:
+            try:
+                sock.sendto(message, (MULTICAST_GROUP, PROXY_MULTICAST_PORT))
+                logging.info(f"Anunciando presencia: {self.ip}:{self.port}")
+            except Exception as e:
+                logging.error(f"Error en announce_self: {e}")
+            time.sleep(5)
+
+    def multicast_listener(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(('', PROXY_MULTICAST_PORT))
+        mreq = socket.inet_aton(MULTICAST_GROUP) + socket.inet_aton("0.0.0.0")
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+        
+        while True:
+            try:
+                data, addr = sock.recvfrom(1024)
+                node_ip, node_port = data.decode().split(',')
+                logging.info(f"Descubierto nodo: {node_ip}:{node_port}")
+                if node_ip != self.ip and (self.succ.id == self.id or self.succ.pred != self.id):
+                    self.join(ChordNodeReference(node_ip, int(node_port)))
+            except Exception as e:
+                logging.error(f"Error en multicast_listener: {e}")
+
     def _inbetween(self, k: int, start: int, end: int) -> bool:
         if start < end:
             return start < k <= end
@@ -168,7 +210,7 @@ class ChordNode:
                 return self.finger[i]
         return self.ref
 
-    def join(self, node: "ChordNodeReference"):
+    async def join(self, node: "ChordNodeReference"):
         logging.info(f"Uniéndose al nodo: {node.ip}:{node.port}")
         if node:
             self.pred = None
@@ -176,7 +218,7 @@ class ChordNode:
             logging.info(f"Nuevo sucesor determinado: {self.succ.ip}:{self.succ.port}")
             self.succ.notify(self.ref)
             # Transferir llaves al nuevo nodo
-            self.transfer_keys_to(self.succ)
+            await self.transfer_keys_to(self.succ)
         else:
             self.succ = self.ref
             self.pred = None
@@ -202,7 +244,7 @@ class ChordNode:
                 logging.error(f"Error en stabilize: {e}")
             time.sleep(10)
 
-    def notify(self, node: "ChordNodeReference"):
+    async def notify(self, node: "ChordNodeReference"):
         logging.info(f"Recibiendo notify de {node.ip}:{node.port}")
         if node.id == self.id:
             return
@@ -211,7 +253,7 @@ class ChordNode:
             self.pred = node
             logging.info(f"Actualizado predecesor a {node.ip}:{node.port}")
             if old_pred is None or old_pred.id != node.id:
-                self.transfer_keys_to(node)
+                await self.transfer_keys_to(node)
 
     def fix_fingers(self):
         while True:
@@ -284,17 +326,21 @@ class ChordNode:
                 rows = result.scalars().all()
                 items = []
                 for row in rows:
-                    # Filtrar atributos internos (por ejemplo, _sa_instance_state)
-                    row_dict = {
-                        k: v for k, v in row.__dict__.items() if not k.startswith("_")
-                    }
+                    row_dict = {}
+                    for k, v in row.__dict__.items():
+                        if not k.startswith("_"):
+                            if isinstance(v, datetime):
+                                row_dict[k] = v.isoformat()
+                            else:
+                                row_dict[k] = v
                     items.append(row_dict)
+
             return json.dumps(items)
         except Exception as e:
             logging.error(f"Error en _handle_get_all_filtered: {e}")
             return json.dumps([])
 
-    def store_key(self, key: str, value: str, replica: bool = False):
+    async def store_key(self, key: str, value: str, replica: bool = False):
         """
         Si el nodo actual es el primario para la llave (según Chord),
         se realiza un "upsert" (merge) sobre la tabla correspondiente.
@@ -309,6 +355,15 @@ class ChordNode:
             table, id = key.split(":", 1)
             try:
                 data = json.loads(value)
+
+                for k, v in data.items():
+                    if isinstance(v, str):
+                        try:
+                            # Intentar convertir a datetime si parece ser una fecha ISO
+                            data[k] = datetime.fromisoformat(v)
+                        except ValueError:
+                            # Si no es un formato de fecha válido, dejarlo como está
+                            pass
             except json.JSONDecodeError as e:
                 logging.error(f"Error parseando valor para {key}: {e}")
                 return
@@ -320,10 +375,11 @@ class ChordNode:
 
             async def _store():
                 async with get_db() as session:
-                    session.merge(Model(**data))
+                    await session.merge(Model(**data))
                     await session.commit()
 
-            asyncio.run(_store())
+            await _store()
+            
             logging.info(f"Clave '{key}' almacenada en nodo primario {self.ip}")
             if not replica:
                 try:
@@ -340,7 +396,7 @@ class ChordNode:
             )
             primary_node.store_key(key, value)
 
-    def direct_store_key(self, key: str, value: str):
+    async def direct_store_key(self, key: str, value: str):
         """Almacena la llave directamente (por ejemplo, en transferencia recibida)."""
         if ":" not in key:
             logging.error(f"Clave inválida: {key}")
@@ -359,13 +415,13 @@ class ChordNode:
 
         async def _store():
             async with get_db() as session:
-                session.merge(Model(**data))
+                await session.merge(Model(**data))
                 await session.commit()
 
-        asyncio.run(_store())
+        await _store()
         logging.info(f"Clave '{key}' almacenada directamente (transferencia recibida)")
 
-    def retrieve_key(self, key: str) -> str:
+    async def retrieve_key(self, key: str) -> str:
         key_hash = getShaRepr(key)
         primary_node = self.find_succ(key_hash)
         if primary_node.id == self.id:
@@ -382,22 +438,24 @@ class ChordNode:
                     result = await session.get(Model, id)
                     if result:
                         # Filtramos atributos internos y devolvemos un JSON
-                        data = {
-                            k: v
-                            for k, v in result.__dict__.items()
-                            if not k.startswith("_")
-                        }
+                        data = {}
+                        for k, v in result.__dict__.items():
+                            if not k.startswith("_"):
+                                if isinstance(v, datetime):
+                                    data[k] = v.isoformat()
+                                else:
+                                    data[k] = v
                         return json.dumps(data)
                     return None
 
-            return asyncio.run(_retrieve()) or ""
+            return await _retrieve() or ""
         else:
             logging.info(
                 f"Redirigiendo recuperación de clave '{key}' al nodo {primary_node.ip}"
             )
             return primary_node.retrieve_key(key)
 
-    def delete_key(self, key: str, replicate: bool = False):
+    async def delete_key(self, key: str, replicate: bool = False):
         key_hash = getShaRepr(key)
         primary_node = self.find_succ(key_hash)
         if primary_node.id == self.id:
@@ -417,7 +475,7 @@ class ChordNode:
                         await session.delete(obj)
                         await session.commit()
 
-            asyncio.run(_delete())
+            await _delete()
             logging.info(f"Clave '{key}' borrada en nodo primario {self.ip}")
             if not replicate:
                 try:
@@ -438,7 +496,7 @@ class ChordNode:
             )
             primary_node.delete_key(key)
 
-    def get_all_keys(self) -> List[str]:
+    async def get_all_keys(self) -> List[str]:
         keys = []
 
         async def _get_all():
@@ -448,11 +506,11 @@ class ChordNode:
                     for id in result.scalars().all():
                         keys.append(f"{table}:{id}")
 
-        asyncio.run(_get_all())
+        await _get_all()
         logging.info(f"Recuperando claves desde {self.ip}: {keys}")
         return keys
 
-    def transfer_keys_to(self, new_node: "ChordNodeReference"):
+    async def transfer_keys_to(self, new_node: "ChordNodeReference"):
         logging.info(f"Iniciando transferencia de llaves a {new_node.ip}")
         keys_to_transfer = []
         tables = [
@@ -477,17 +535,20 @@ class ChordNode:
                         key_hash = getShaRepr(key)
                         primary = self.find_succ(key_hash)
                         if primary.id == new_node.id:
-                            data = {
-                                k: v
-                                for k, v in row.__dict__.items()
-                                if not k.startswith("_")
-                            }
+                            data = {}
+                            for k, v in row.__dict__.items():
+                                if not k.startswith("_"):
+                                    if isinstance(v, datetime):
+                                        data[k] = v.isoformat()
+                                    else:
+                                        data[k] = v
+                            
                             keys_to_transfer.append(
                                 {"key": key, "value": json.dumps(data)}
                             )
             return keys_to_transfer
 
-        keys_to_transfer = asyncio.run(_transfer())
+        keys_to_transfer = await _transfer()
         logging.info(f"keys_to_transfer data found: {keys_to_transfer}")
         if keys_to_transfer:
             try:
@@ -506,7 +567,7 @@ class ChordNode:
             except Exception as e:
                 logging.error(f"Error transfiriendo llaves al nuevo nodo: {e}")
 
-    def refresh_replication(self):
+    async def refresh_replication(self):
         async def _refresh():
             keys = []
             async with get_db() as session:
@@ -516,14 +577,14 @@ class ChordNode:
                         keys.append(f"{table}:{id}")
             return keys
 
-        keys = asyncio.run(_refresh())
+        keys = await _refresh()
         for key in keys:
             key_hash = getShaRepr(key)
             if self.find_succ(key_hash).id == self.id:
                 try:
                     succ1 = self.succ
                     succ2 = succ1.succ
-                    value = self.retrieve_key(key)
+                    value = await self.retrieve_key(key)
                     succ1._send_data(REPLICATE_KEY, f"{key},{value}")
                     succ2._send_data(REPLICATE_KEY, f"{key},{value}")
                     logging.info(
@@ -532,9 +593,9 @@ class ChordNode:
                 except Exception as e:
                     logging.error(f"Error refrescando replicación para '{key}': {e}")
 
-    def refresh_replication_loop(self):
+    async def refresh_replication_loop(self):
         while True:
-            self.refresh_replication()
+            await self.refresh_replication()
             time.sleep(60)
 
     def start_server(self):
@@ -555,7 +616,7 @@ class ChordNode:
 
     def handle_connection(self, conn):
         try:
-            data = conn.recv(4096).decode().split(",")
+            data = conn.recv(4096).decode().split(DELIMITER)
             if not data:
                 return
             option = int(data[0])
@@ -578,7 +639,7 @@ class ChordNode:
                 id = int(data[1])
                 ip = data[2]
                 logging.info(f"handle_connection: NOTIFY recibido de {ip}")
-                self.notify(ChordNodeReference(ip, self.port))
+                asyncio.run(self.notify(ChordNodeReference(ip, self.port)))
                 response = b""
             elif option == CHECK_PREDECESSOR:
                 self.check_predecessor()
@@ -595,7 +656,7 @@ class ChordNode:
             elif option == RETRIEVE_KEY:
                 key = data[1]
                 logging.info(f"handle_connection: RETRIEVE_KEY para '{key}'")
-                value = self.retrieve_key(key)
+                value = asyncio.run(self.retrieve_key(key))
                 response = value.encode() if value else b""
             elif option == REPLICATE_KEY:
                 key, value = data[1], data[2]
@@ -604,12 +665,12 @@ class ChordNode:
                 response = b""
             elif option == GET_ALL_KEYS:
                 logging.info("handle_connection: GET_ALL_KEYS")
-                self.get_all_keys()
+                asyncio.run(self.get_all_keys())
                 response = b""
             elif option == DELETE_KEY:
                 key = data[1]
                 logging.info(f"handle_connection: DELETE_KEY para '{key}'")
-                self.delete_key(key, replicate=True)
+                asyncio.run(self.delete_key(key, replicate=True))
                 response = b""
             elif option == GET_ALL_FILTERED:
                 query_payload = data[1] if len(data) > 1 else "{}"

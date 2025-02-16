@@ -1,4 +1,5 @@
 import json
+import logging
 import uuid
 
 from app.settings import settings
@@ -13,13 +14,17 @@ class UserRepository(IUserRepository):
 
     async def create(self, user_create: UserCreate) -> UserResponse:
         user = self.mapper.to_table(user_create)
-        settings.node.store_key(f"users:{user.id}", json.dumps(user))
+        
+        print("settings.node:",settings.node)
+        logging.info("settings.node:",settings.node)
+
+        await settings.node.store_key(f"users:{user['id']}", json.dumps(user))
 
         return self.mapper.to_entity(user)
 
     async def update(self, id: uuid.UUID, user_data: dict) -> UserResponse:
         user_key = f"users:{id}"
-        user_json = settings.node.retrieve_key(user_key)
+        user_json = await settings.node.retrieve_key(user_key)
 
         if not user_json:
             raise Exception("User not found")
@@ -27,12 +32,12 @@ class UserRepository(IUserRepository):
 
         for key, value in user_data.items():
             user[key] = value
-        settings.node.store_key(user_key, json.dumps(user))
+        await settings.node.store_key(user_key, json.dumps(user))
 
         return self.mapper.to_entity(user)
 
     async def get_by_id(self, id: uuid.UUID) -> UserResponse:
-        user_json = settings.node.retrieve_key(f"users:{id}")
+        user_json = await settings.node.retrieve_key(f"users:{id}")
         if user_json:
             user = json.loads(user_json)
             return self.mapper.to_entity(user)
@@ -41,7 +46,7 @@ class UserRepository(IUserRepository):
     async def get_by_username(self, username: str) -> UserResponse:
         payload = {
             "table": "users",
-            "filters": {"username": username},
+            "filters": {"username": username}
         }
         users_json = settings.node.ref.get_all_filtered(json.dumps(payload))
         users_list = json.loads(users_json) if users_json else []
@@ -54,7 +59,7 @@ class UserRepository(IUserRepository):
     async def get_all(self) -> list[UserResponse]:
         payload = {
             "table": "users",
-            "filters": {},
+            "filters": {}
         }
         users_json = settings.node.ref.get_all_filtered(json.dumps(payload))
         users = json.loads(users_json) if users_json else []
@@ -63,7 +68,7 @@ class UserRepository(IUserRepository):
 
     async def delete(self, id: uuid.UUID):
         user_key = f"users:{id}"
-        user_json = settings.node.retrieve_key(user_key)
+        user_json = await settings.node.retrieve_key(user_key)
 
         if user_json:
-            settings.node.delete_key(user_key)
+            await settings.node.delete_key(user_key)
