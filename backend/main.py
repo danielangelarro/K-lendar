@@ -1,4 +1,6 @@
 import json
+import socket
+import threading
 from fastapi.responses import JSONResponse
 import inject
 import asyncio
@@ -8,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.settings import configure as inject_configure
 from app.api.user_router import router as user_router
 from app.api.auth_router import router as auth_router
+from app.api.chord_router import router as chord_router
 from app.api.event_router import router as event_router
 from app.api.group_router import router as group_router
 from app.api.agenda_router import router as agenda_router
@@ -16,6 +19,7 @@ from app.api.invitation_router import router as invitation_router
 from app.api.notification_router import router as notification_router
 from app.infrastructure.sqlite.tables import Base
 from app.infrastructure.sqlite.database import engine
+from app.settings import settings
 
 
 app = FastAPI()
@@ -46,7 +50,7 @@ app.add_middleware(
     allow_headers=["*"],      # Permitir todos los encabezados
 )
 
-
+# app.add_middleware(LoggingMiddleware)
 
 # Almacena conexiones de WebSocket
 active_connections = {}
@@ -82,6 +86,8 @@ async def startup_event():
 
 @app.on_event("startup")
 async def startup():
+    threading.Thread(target=settings.CHORD_SERVICE.start, daemon=True).start()
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -91,6 +97,7 @@ inject.configure(inject_configure)
 # Routes
 app.include_router(user_router)
 app.include_router(auth_router)
+app.include_router(chord_router)
 app.include_router(event_router)
 app.include_router(group_router)
 app.include_router(member_router)
@@ -101,4 +108,4 @@ app.include_router(notification_router)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=settings.IP, port=8000)

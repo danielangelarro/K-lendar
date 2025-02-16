@@ -1,10 +1,12 @@
 import os
+import socket
 from pydantic import BaseSettings
 
 
-def configure(binder):
+def configure(binder):    
     from app.application.services.user_service import IUserService
     from app.application.services.auth_service import IAuthService
+    from app.application.services.chord_service import IChordService
     from app.application.services.event_service import IEventService
     from app.application.services.group_service import IGroupService
     from app.application.services.member_service import IMemberService
@@ -22,6 +24,7 @@ def configure(binder):
     
     from app.infrastructure.services.user_service import UserService
     from app.infrastructure.services.auth_service import AuthService
+    from app.infrastructure.services.chord_service import ChordService
     from app.infrastructure.services.event_service import EventService
     from app.infrastructure.services.group_service import GroupService
     from app.infrastructure.services.member_service import MemberService
@@ -41,6 +44,7 @@ def configure(binder):
     # Services
     binder.bind(IUserService, UserService())
     binder.bind(IAuthService, AuthService())
+    binder.bind(IChordService, ChordService())
     binder.bind(IEventService, EventService())
     binder.bind(IGroupService, GroupService())
     binder.bind(IMemberService, MemberService())
@@ -59,13 +63,22 @@ def configure(binder):
 
 
 class Settings(BaseSettings):
+    from app.infrastructure.services.chord_service import ChordService
+
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./database.sqlite")
     SECRET_KEY = os.getenv("SECRET_KEY", "tu_clave_secreta")
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+    IP = socket.gethostbyname(socket.gethostname())
+    CHORD_SERVICE = ChordService(IP)
+
     class Config:
         env_file = ".env"
+    
+    @property
+    def node(self):
+        return self.CHORD_SERVICE.get_node
 
 
 settings = Settings()
