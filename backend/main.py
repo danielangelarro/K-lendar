@@ -62,6 +62,11 @@ async def startup():
         await conn.run_sync(Base.metadata.create_all)
 
 
+@app.get("/ping")
+def ping():
+    return {"status": "ok"}
+
+
 inject.configure(inject_configure)
 
 # Routes

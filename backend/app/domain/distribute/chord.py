@@ -156,8 +156,8 @@ class ChordNode:
         threading.Thread(target=self.fix_fingers, daemon=True).start()
         threading.Thread(target=self.check_predecessor, daemon=True).start()
         threading.Thread(target=self.start_server, daemon=True).start()
-        # threading.Thread(target=self.multicast_listener, daemon=True).start()
-        # threading.Thread(target=self.announce_self, daemon=True).start()
+        threading.Thread(target=self.multicast_listener, daemon=True).start()
+        threading.Thread(target=self.announce_self, daemon=True).start()
     
     def announce_self(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
