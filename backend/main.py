@@ -83,4 +83,4 @@ app.include_router(notification_router)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=settings.IP, port=8000)
+    uvicorn.run(app, host=settings.IP, port=5000)

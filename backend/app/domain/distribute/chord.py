@@ -80,43 +80,43 @@ class ChordNodeReference:
             return b""
 
     def find_successor(self, id_val: int) -> "ChordNodeReference":
-        response = self._send_data(FIND_SUCCESSOR, str(id_val)).decode().split(",")
+        response = self._send_data(FIND_SUCCESSOR, str(id_val)).decode().split(DELIMITER)
         logging.info(f"find_successor({id_val}) -> {response}")
         return ChordNodeReference(response[1], self.port)
 
     def find_predecessor(self, id_val: int) -> "ChordNodeReference":
-        response = self._send_data(FIND_PREDECESSOR, str(id_val)).decode().split(",")
+        response = self._send_data(FIND_PREDECESSOR, str(id_val)).decode().split(DELIMITER)
         logging.info(f"find_predecessor({id_val}) -> {response}")
         return ChordNodeReference(response[1], self.port)
 
     @property
     def succ(self) -> "ChordNodeReference":
-        response = self._send_data(GET_SUCCESSOR).decode().split(",")
+        response = self._send_data(GET_SUCCESSOR).decode().split(DELIMITER)
         logging.info(f"GET_SUCCESSOR -> {response}")
         return ChordNodeReference(response[1], self.port)
 
     @property
     def pred(self) -> "ChordNodeReference":
-        response = self._send_data(GET_PREDECESSOR).decode().split(",")
+        response = self._send_data(GET_PREDECESSOR).decode().split(DELIMITER)
         logging.info(f"GET_PREDECESSOR -> {response}")
         return ChordNodeReference(response[1], self.port)
 
     def notify(self, node: "ChordNodeReference"):
         logging.info(f"Notificando a {self.ip}:{self.port} con nodo {node.ip}")
-        self._send_data(NOTIFY, f"{node.id},{node.ip}")
+        self._send_data(NOTIFY, f"{node.id}{DELIMITER}{node.ip}")
 
     def check_predecessor(self):
         self._send_data(CHECK_PREDECESSOR)
 
     def closest_preceding_finger(self, id_val: int) -> "ChordNodeReference":
         response = (
-            self._send_data(CLOSEST_PRECEDING_FINGER, str(id_val)).decode().split(",")
+            self._send_data(CLOSEST_PRECEDING_FINGER, str(id_val)).decode().split(DELIMITER)
         )
         logging.info(f"closest_preceding_finger({id_val}) -> {response}")
         return ChordNodeReference(response[1], self.port)
 
     def store_key(self, key: str, value: str):
-        self._send_data(STORE_KEY, f"{key},{value}")
+        self._send_data(STORE_KEY, f"{key}{DELIMITER}{value}")
 
     def retrieve_key(self, key: str) -> str:
         return self._send_data(RETRIEVE_KEY, key).decode()
@@ -156,22 +156,29 @@ class ChordNode:
         threading.Thread(target=self.fix_fingers, daemon=True).start()
         threading.Thread(target=self.check_predecessor, daemon=True).start()
         threading.Thread(target=self.start_server, daemon=True).start()
-        threading.Thread(target=self.multicast_listener, daemon=True).start()
         threading.Thread(target=self.announce_self, daemon=True).start()
+        threading.Thread(target=self.run_multicast_listener, daemon=True).start()
     
     def announce_self(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
-        message = f'{self.ip},{self.port}'.encode()
+        message = f'{self.ip}{DELIMITER}{self.port}'.encode()
         while True:
             try:
                 sock.sendto(message, (MULTICAST_GROUP, PROXY_MULTICAST_PORT))
                 logging.info(f"Anunciando presencia: {self.ip}:{self.port}")
+                print(f"Anunciando presencia: {self.ip}:{self.port}")
             except Exception as e:
                 logging.error(f"Error en announce_self: {e}")
+                print(f"Error en announce_self: {e}")
             time.sleep(5)
 
-    def multicast_listener(self):
+    def run_multicast_listener(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self.multicast_listener())
+
+    async def multicast_listener(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('', PROXY_MULTICAST_PORT))
@@ -181,12 +188,14 @@ class ChordNode:
         while True:
             try:
                 data, addr = sock.recvfrom(1024)
-                node_ip, node_port = data.decode().split(',')
+                node_ip, node_port = data.decode().split(DELIMITER)
                 logging.info(f"Descubierto nodo: {node_ip}:{node_port}")
+                print(f"Descubierto nodo: {node_ip}:{node_port}")
                 if node_ip != self.ip and (self.succ.id == self.id or self.succ.pred != self.id):
-                    self.join(ChordNodeReference(node_ip, int(node_port)))
+                    await self.join(ChordNodeReference(node_ip, int(node_port)))
             except Exception as e:
                 logging.error(f"Error en multicast_listener: {e}")
+                print(f"Error en multicast_listener: {e}")
 
     def _inbetween(self, k: int, start: int, end: int) -> bool:
         if start < end:
@@ -385,8 +394,8 @@ class ChordNode:
                 try:
                     succ1 = self.succ
                     succ2 = succ1.succ
-                    succ1._send_data(REPLICATE_KEY, f"{key},{value}")
-                    succ2._send_data(REPLICATE_KEY, f"{key},{value}")
+                    succ1._send_data(REPLICATE_KEY, f"{key}{DELIMITER}{value}")
+                    succ2._send_data(REPLICATE_KEY, f"{key}{DELIMITER}{value}")
                     logging.info(f"Clave '{key}' replicada a {succ1.ip} y {succ2.ip}")
                 except Exception as e:
                     logging.error(f"Error replicando la clave '{key}': {e}")
@@ -585,8 +594,8 @@ class ChordNode:
                     succ1 = self.succ
                     succ2 = succ1.succ
                     value = await self.retrieve_key(key)
-                    succ1._send_data(REPLICATE_KEY, f"{key},{value}")
-                    succ2._send_data(REPLICATE_KEY, f"{key},{value}")
+                    succ1._send_data(REPLICATE_KEY, f"{key}{DELIMITER}{value}")
+                    succ2._send_data(REPLICATE_KEY, f"{key}{DELIMITER}{value}")
                     logging.info(
                         f"Refrescada replicación de '{key}' en {succ1.ip} y {succ2.ip}"
                     )
@@ -624,17 +633,17 @@ class ChordNode:
             if option == FIND_SUCCESSOR:
                 id = int(data[1])
                 node_ref = self.find_succ(id)
-                response = f"{node_ref.id},{node_ref.ip}".encode()
+                response = f"{node_ref.id}{DELIMITER}{node_ref.ip}".encode()
             elif option == FIND_PREDECESSOR:
                 id = int(data[1])
                 node_ref = self.find_pred(id)
-                response = f"{node_ref.id},{node_ref.ip}".encode()
+                response = f"{node_ref.id}{DELIMITER}{node_ref.ip}".encode()
             elif option == GET_SUCCESSOR:
                 node_ref = self.succ if self.succ else self.ref
-                response = f"{node_ref.id},{node_ref.ip}".encode()
+                response = f"{node_ref.id}{DELIMITER}{node_ref.ip}".encode()
             elif option == GET_PREDECESSOR:
                 node_ref = self.pred if self.pred else self.ref
-                response = f"{node_ref.id},{node_ref.ip}".encode()
+                response = f"{node_ref.id}{DELIMITER}{node_ref.ip}".encode()
             elif option == NOTIFY:
                 id = int(data[1])
                 ip = data[2]
@@ -647,7 +656,7 @@ class ChordNode:
             elif option == CLOSEST_PRECEDING_FINGER:
                 id = int(data[1])
                 node_ref = self.closest_preceding_finger(id)
-                response = f"{node_ref.id},{node_ref.ip}".encode()
+                response = f"{node_ref.id}{DELIMITER}{node_ref.ip}".encode()
             elif option == STORE_KEY:
                 key, value = data[1], data[2]
                 logging.info(f"handle_connection: STORE_KEY para '{key}'")

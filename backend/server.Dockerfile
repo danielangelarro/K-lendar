@@ -8,7 +8,7 @@ COPY pyproject.toml poetry.lock* ./
 
 RUN poetry config virtualenvs.create true \
     && poetry config virtualenvs.in-project true \
-    && poetry install --no-interaction
+    && poetry install --no-interaction --no-root
 
 COPY . .
 
@@ -16,4 +16,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 RUN rm -rf database.sqlite && alembic upgrade head
 
-CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["poetry", "run", "python", "main.py"]
