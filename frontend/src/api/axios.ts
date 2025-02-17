@@ -1,13 +1,46 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
+const servers = [
+  import.meta.env.VITE_API_URL1,
+  import.meta.env.VITE_API_URL2,
+  import.meta.env.VITE_API_URL3,
+];
+
+const pingServer = (serverUrl: string): Promise<string> => {
+  return axios
+    .get(`${serverUrl}/ping`, { timeout: 3000 }) // timeout de 3 segundos
+    .then(() => serverUrl);
+};
+
+export const selectServer = async (): Promise<string> => {
+  const pingPromises = servers.map((url) => pingServer(url));
+  try {
+    const selectedServer = await Promise.any(pingPromises);
+    return selectedServer;
+  } catch (error) {
+    throw new Error("No se pudo conectar a ningún servidor disponible.");
+  }
+};
+
+const api = axios.create();
+
+export const initApi = async (): Promise<void> => {
+  try {
+    const selectedServer = await selectServer();
+    api.defaults.baseURL = selectedServer;
+    console.log(`Servidor seleccionado: ${selectedServer}`);
+  } catch (error) {
+    toast.error("No se pudo conectar a ningún servidor disponible.");
+    throw error;
+  }
+};
 
 // Interceptor para añadir el token a las solicitudes
 api.interceptors.request.use(
-  config => {
+  async (config) => {
+    await initApi();
+
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

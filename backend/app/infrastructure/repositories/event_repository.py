@@ -1,16 +1,14 @@
-from enum import Enum
+import json
 from typing import List
 import uuid
 
+from app.infrastructure.sqlite.utils import generate_uuid
+from app.settings import settings
 from fastapi import HTTPException
-from sqlalchemy import case
-from sqlalchemy.future import select
 
 from app.application.repositories.event_repository import IEventRepository
 from app.domain.models.enum import EventStatus
 from app.domain.models.schemma import EventCreate, EventResponse
-from app.infrastructure.sqlite.tables import Event, Group, Member, Notification, UserEvent
-from app.infrastructure.sqlite.database import get_db
 from app.infrastructure.repositories.mapper import EventMapper, GroupMapper
 
 
@@ -19,152 +17,141 @@ class EventRepository(IEventRepository):
     group_mapper = GroupMapper()
 
     async def create(self, event_create: EventCreate) -> EventResponse:
-        async with get_db() as db:
-            event = self.mapper.to_table(event_create)
-            db.add(event)
+        event_dict = self.mapper.to_table(event_create)
+        # Almacenar el evento
+        await settings.node.store_key(f"events:{event_dict['id']}", json.dumps(event_dict))
 
-            await db.flush()
+        # Registrar la relación en la tabla user_event
+        user_event = {
+            "id": generate_uuid(),
+            "user_id": str(event_create.creator_id),
+            "event_id": event_dict["id"],
+            "status": event_create.status,
+            "group_id": str(event_create.group_id) if event_create.group_id else None,
+        }
+        await settings.node.store_key(
+            f"user_event:{user_event['id']}", json.dumps(user_event)
+        )
 
-            db.add(UserEvent(
-                user_id=str(event_create.creator_id),
-                event_id=str(event.id),
-                status=event_create.status,
-                group_id=str(event_create.group_id),
-            ))
+        response = self.mapper.to_entity(event_dict)
+        response.status = event_create.status
+        return response
 
-            try:
-                await self.commit(db)
-                await self.refresh(db, event)
-                
-                response = self.mapper.to_entity(event)
-                response.status = event_create.status
-                
-                return response
-            except Exception as e:
-                await db.rollback()
-                raise e
-    
     async def asign_event(self, event_id: str, user_id: str, group_id: str) -> None:
-        async with get_db() as db:
-            try:
-                await db.begin()
+        user_event = {
+            "id": generate_uuid(),
+            "user_id": user_id,
+            "event_id": event_id,
+            "status": EventStatus.PENDING.value,
+            "group_id": group_id,
+        }
 
-                user_event = UserEvent(
-                    user_id=user_id,
-                    event_id=event_id,
-                    status=EventStatus.PENDING.value,
-                    group_id=group_id,
-                )
+        await settings.node.store_key(
+            f"user_event:{user_event['id']}", json.dumps(user_event)
+        )
 
-                result = await db.execute(select(Event).where(Event.id == str(event_id)))
-                event = result.scalars().first()
+        event = await settings.node.retrieve_key(f"events:{event_id}")
+        group = await settings.node.retrieve_key(f"events:{group_id}")
 
-                result = await db.execute(select(Group).where(Group.id == str(group_id)))
-                group = result.scalars().first()
+        is_owner = False
 
-                is_owner = event.creator == group.owner_id
+        if event and group:
+            event_data = json.loads(event)
+            group_data = json.loads(group)
+            is_owner = event_data.get("creator", "") == group_data.get("owner_id", "")
 
-                notification = Notification(
-                    recipient=user_id,
-                    sender=user_id,
-                    event=event_id,
-                    priority=is_owner,
-                    title="Event Notifications",
-                    message=f'New event "{event.title}" assign in {group.group_name} by admin.',
-                )
-
-                db.add(user_event)
-                db.add(notification)
-
-                await self.commit(db)
-                await self.refresh(db, user_event)
-            except Exception as e:
-                await db.rollback()
-                raise e
+        # Crear la notificación correspondiente
+        notification = {
+            "id": generate_uuid(),
+            "recipient": user_id,
+            "sender": user_id,
+            "event": event_id,
+            "priority": is_owner,
+            "title": "Event Invitations",
+            "message": f"New event assigned for event {event_id} in group {group_id}.",
+        }
+        await settings.node.store_key(
+            f"notification:{notification['id']}", json.dumps(notification)
+        )
 
     async def get_by_id(self, event_id: uuid.UUID) -> EventResponse:
-        async with get_db() as db:
-            result_event = await db.execute(select(Event).where(Event.id == str(event_id)))
-            result_event_status = await db.execute(select(UserEvent).where(UserEvent.event_id == str(event_id)))
-            
-            event = result_event.scalars().first()
-            event_status = result_event_status.scalars().first()
+        event_json = await settings.node.retrieve_key(f"events:{event_id}")
 
-            if event:
-                response = self.mapper.to_entity(event)
-                response.status = event_status.status
-                return response
-            
+        query_payload = json.dumps(
+            {"table": "user_event", "filters": {"event_id": str(event_id)}}
+        )
+        ue_json = settings.node.ref.get_all_filtered(query_payload)
+        ue_list = json.loads(ue_json) if ue_json else []
+        
+        if not event_json or not ue_list:
             return None
+        event = json.loads(event_json)
+        ue = ue_list[0]
+
+        response = self.mapper.to_entity(event)
+        response.status = ue.get("status")
+
+        return response
 
     async def get_by_user_id(self, user_id: uuid.UUID) -> List[EventResponse]:
-        async with get_db() as db:
-            result = await db.execute(
-                select(Event)
-                .join(UserEvent, Event.id == UserEvent.event_id)
-                .where(UserEvent.user_id == str(user_id))
-            )
-            
-            results = result.scalars().all()
-            events = []
-            
-            for item in results:
-                result_event_status = await db.execute(select(UserEvent).where(UserEvent.event_id == item.id))
-                event_status = result_event_status.scalars().first()
-                
-                result = await db.execute(select(Group).where(Group.id == event_status.group_id))
-                group = result.scalars().first()
+        query_payload = json.dumps(
+            {"table": "user_event", "filters": {"user_id": str(user_id)}}
+        )
+        user_events_json = settings.node.ref.get_all_filtered(query_payload)
+        user_events = json.loads(user_events_json) if user_events_json else []
 
-                event = self.mapper.to_entity(item)
-                event.status = event_status.status
+        events = []
+        for ue in user_events:
+            event_json = await settings.node.retrieve_key(f"events:{ue['event_id']}")
+            if event_json:
+                event = json.loads(event_json)
+                event["status"] = ue.get("status")
 
-                if group:
-                    event.group = self.group_mapper.to_entity(group)
+                group_id = ue.get("group_id")
+                if group_id:
+                    group_json = await settings.node.retrieve_key(f"groups:{group_id}")
+                    if group_json:
+                        event["group"] = json.loads(group_json)
 
-                events.append(event)
-            
-            return events
+                events.append(self.mapper.to_entity(event))
 
-    async def update(self, event_id: uuid.UUID, event_data: EventCreate) -> EventResponse:
-        async with get_db() as db:
-            try:
-                result = await db.execute(select(Event).where(Event.id == str(event_id)))
-                event = result.scalars().first()
+        return events
 
-                if not event:
-                    raise HTTPException(status_code=404, detail="Event not found")
+    async def update(
+        self, event_id: uuid.UUID, event_data: EventCreate
+    ) -> EventResponse:
+        event_key = f"events:{event_id}"
+        event_json = await settings.node.retrieve_key(event_key)
 
-                update_data = event_data.dict(exclude_unset=True)
-            
-                for key, value in update_data.items():
-                    if key == "end_time":
-                        setattr(event, "end_datetime", value)
-                    elif key == "start_time":
-                        setattr(event, "start_datetime", value)
-                    elif hasattr(event, key):
-                        if key == "event_type":
-                            setattr(event, key, value.value)
-                        else:
-                            setattr(event, key, value)
-                
-                await db.flush()
-                await self.commit(db)
-                await self.refresh(db, event)
+        if not event_json:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        event = json.loads(event_json)
+        update_data = event_data.dict(exclude_unset=True)
+        
+        for key, value in update_data.items():
+            if key == "end_time":
+                setattr(event, "end_datetime", value.isoformat())
+            elif key == "start_time":
+                setattr(event, "start_datetime", value.isoformat())
+            elif key == "event_type":
+                setattr(event, key, value.value)
+            else:
+                event[key] = value
+        
+        await settings.node.store_key(event_key, json.dumps(event))
 
-                response = self.mapper.to_entity(event)
-                response.status = event_data.status
-                
-                return response
-            except Exception as e:
-                await db.rollback()
-                raise HTTPException(status_code=500, detail=str(e))
+        ue_key = f"user_event:{event_id}"
+        ue_json = await settings.node.retrieve_key(ue_key)
+        if ue_json:
+            ue = json.loads(ue_json)
+            ue["status"] = event_data.status
+            await settings.node.store_key(ue_key, json.dumps(ue))
+        response = self.mapper.to_entity(event)
+        response.status = event_data.status
+
+        return response
 
     async def delete(self, event_id: uuid.UUID):
-        async with get_db() as db:
-            result = await db.execute(select(Event).where(Event.id == str(event_id)))
-            event = result.scalars().first()
-            if event:
-                await db.delete(event)
-                await self.commit(db)
-            else:
-                raise Exception("Event not found")
+        await settings.node.delete_key(f"events:{event_id}")
+        await settings.node.delete_key(f"user_event:{event_id}")

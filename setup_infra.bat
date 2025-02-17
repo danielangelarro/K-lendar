@@ -20,13 +20,23 @@ if %errorlevel% equ 0 (
     echo Network servers created.
 )
 
+rem check router:base docker image existence 
+
+docker image inspect router:base > nul 2>&1
+if %errorlevel% equ 0 (
+    echo Image router:base exists.
+) else (
+    docker build -t router:base -f router/router_base.Dockerfile router/
+    echo Image router:base created.
+)
+
 rem check router docker image existence 
 
 docker image inspect router > nul 2>&1
 if %errorlevel% equ 0 (
     echo Image router exists.
 ) else (
-    docker build -t router -f router/router.Dockerfile .
+    docker build -t router -f router/router.Dockerfile router/
     echo Image router created.
 )
 
@@ -39,11 +49,17 @@ if %errorlevel% equ 0 (
     echo Container router removed.
 )
 
-docker run -d --rm --name router router
+docker run -d --rm --name router --cap-add NET_ADMIN -e PYTHONUNBUFFERED=1 router
 echo Container router executed.
 
-docker network connect --ip 10.0.10.100 clients router
-docker network connect --ip 10.0.11.100 servers router
+docker network connect --ip 10.0.10.254 clients router
+docker network connect --ip 10.0.11.254 servers router
+
+docker run -d --rm --name mcproxy --cap-add NET_ADMIN -e PYTHONUNBUFFERED=1 router
+echo Container router executed.
+
+docker network connect --ip 10.0.11.253 servers mcproxy
+docker network connect --ip 10.0.10.253 clients mcproxy
 
 echo Container router connected to client and server networks
 

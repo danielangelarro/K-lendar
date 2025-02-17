@@ -1,44 +1,37 @@
+import json
 import uuid
 from typing import List
-
 from app.application.repositories.notification_repository import INotificationRepository
 from app.domain.models.schemma import NotificationResponse
 from app.infrastructure.repositories.mapper import NotificationMapper
-from app.infrastructure.sqlite.tables import Notification
-from app.infrastructure.sqlite.database import get_db
-from sqlalchemy.future import select
-from sqlalchemy import update, and_
+from app.settings import settings
 
 
 class NotificationRepository(INotificationRepository):
     mapper = NotificationMapper()
 
-    async def get_by_recipient(self, recipient_id: uuid.UUID) -> List[NotificationResponse]:
-        async with get_db() as db:
-            result = await db.execute(
-                select(Notification)
-                .where(and_(
-                    Notification.recipient == str(recipient_id),
-                    Notification.is_read == False
-                ))
-            )
-            notifications = result.scalars().all()
-            return [self.mapper.to_entity(notification) for notification in notifications]
+    async def get_by_recipient(
+        self, recipient_id: uuid.UUID
+    ) -> List[NotificationResponse]:
+        # Construir el payload para filtrar la tabla "notification" por recipient e is_read=False
+        payload = {
+            "table": "notification",
+            "filters": {"recipient": str(recipient_id), "is_read": False},
+        }
+        notifications_json = settings.node.ref.get_all_filtered(json.dumps(payload))
+        notifications_list = (
+            json.loads(notifications_json) if notifications_json else []
+        )
+        # Convertir cada registro a entidad usando el mapper
+        return [self.mapper.to_entity(n) for n in notifications_list]
 
     async def mark_as_read(self, notification_ids: List[uuid.UUID]) -> None:
-        async with get_db() as db:
-            await db.begin()
-
-            for notification in notification_ids:
-                notification = await db.execute(select(Notification).where(Notification.id == str(notification)))
-                notification = notification.scalars().first()
-                if notification:
-                    notification.is_read = True
-                    
-                    try:
-                        await self.commit(db)
-                    except Exception as e:
-                        await db.rollback()
-                        raise e
-                else:
-                    raise Exception("Notification not found")
+        for notif_id in notification_ids:
+            key = f"notification:{notif_id}"
+            notif_json = await settings.node.retrieve_key(key)
+            if notif_json:
+                notif = json.loads(notif_json)
+                notif["is_read"] = True
+                await settings.node.store_key(key, json.dumps(notif))
+            else:
+                raise Exception("Notification not found")

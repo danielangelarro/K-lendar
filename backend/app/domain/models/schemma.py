@@ -120,8 +120,16 @@ class NotificationResponse(BaseModelSchema):
     group: Optional[uuid.UUID] = None
 
 
-
 class UserAgendaResponse(BaseModelSchema):
     user_id: uuid.UUID
     name: str
     events: list[EventResponse]
+
+
+class KeyValueRequest(BaseModel):
+    key: str
+    value: str
+
+
+class KeysPayload(BaseModel):
+    keys: List[KeyValueRequest]

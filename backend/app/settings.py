@@ -1,8 +1,10 @@
 import os
+import socket
 from pydantic import BaseSettings
+from app.infrastructure.services.chord_service import ChordService
 
 
-def configure(binder):
+def configure(binder):    
     from app.application.services.user_service import IUserService
     from app.application.services.auth_service import IAuthService
     from app.application.services.event_service import IEventService
@@ -64,8 +66,18 @@ class Settings(BaseSettings):
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+    IP = socket.gethostbyname(socket.gethostname())
+    
     class Config:
         env_file = ".env"
+    
+    @property
+    def chord_service(self):
+        return ChordService(self.IP)
+
+    @property
+    def node(self):
+        return self.chord_service.get_node()
 
 
 settings = Settings()

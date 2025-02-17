@@ -1,71 +1,74 @@
+import json
+import logging
 import uuid
 
+from app.settings import settings
 from app.application.repositories.user_repository import IUserRepository
 from app.domain.models.schemma import UserCreate
 from app.domain.models.schemma import UserResponse
-from app.infrastructure.sqlite.tables import User
-from app.infrastructure.sqlite.database import get_db
 from app.infrastructure.repositories.mapper import UserMapper
-
-
-from sqlalchemy.future import select
 
 
 class UserRepository(IUserRepository):
     mapper = UserMapper()
 
     async def create(self, user_create: UserCreate) -> UserResponse:
-        async with get_db() as db:
-            user = self.mapper.to_table(user_create)
-            db.add(user)
-            try:
-                await self.commit(db)
-                await self.refresh(db, user)
-                return self.mapper.to_entity(user)
-            except Exception as e:
-                await db.rollback()
-                raise e
+        user = self.mapper.to_table(user_create)
+        
+        print("settings.node:",settings.node)
+        logging.info("settings.node:",settings.node)
+
+        await settings.node.store_key(f"users:{user['id']}", json.dumps(user))
+
+        return self.mapper.to_entity(user)
 
     async def update(self, id: uuid.UUID, user_data: dict) -> UserResponse:
-        async with get_db() as db:
-            user = await self.get_by_id(str(id))
-            for key, value in user_data.items():
-                setattr(user, key, value)
-            
-            try:
-                await self.commit(db)
-                await self.refresh(db, user)
-                return self.mapper.to_entity(user)
-            except Exception as e:
-                await db.rollback()
-                raise e
+        user_key = f"users:{id}"
+        user_json = await settings.node.retrieve_key(user_key)
+
+        if not user_json:
+            raise Exception("User not found")
+        user = json.loads(user_json)
+
+        for key, value in user_data.items():
+            user[key] = value
+        await settings.node.store_key(user_key, json.dumps(user))
+
+        return self.mapper.to_entity(user)
 
     async def get_by_id(self, id: uuid.UUID) -> UserResponse:
-        async with get_db() as db:
-            result = await db.execute(select(User).where(User.id == str(id)))
-            user = result.scalars().first()
-            return self.mapper.to_entity(user) if user else None
+        user_json = await settings.node.retrieve_key(f"users:{id}")
+        if user_json:
+            user = json.loads(user_json)
+            return self.mapper.to_entity(user)
+        return None
 
     async def get_by_username(self, username: str) -> UserResponse:
-        async with get_db() as db:
-            result = await db.execute(select(User).where(User.username == username))
-            user = result.scalars().first()
-            return self.mapper.to_entity(user) if user else None
+        payload = {
+            "table": "users",
+            "filters": {"username": username}
+        }
+        users_json = settings.node.ref.get_all_filtered(json.dumps(payload))
+        users_list = json.loads(users_json) if users_json else []
 
+        if not users_list:
+            return None
+
+        return self.mapper.to_entity(users_list[0])
 
     async def get_all(self) -> list[UserResponse]:
-        async with get_db() as db:
-            result = await db.execute(select(User))
-            users = result.scalars().all()
-            return [self.mapper.to_entity(user) for user in users]
+        payload = {
+            "table": "users",
+            "filters": {}
+        }
+        users_json = settings.node.ref.get_all_filtered(json.dumps(payload))
+        users = json.loads(users_json) if users_json else []
+
+        return [self.mapper.to_entity(user) for user in users]
 
     async def delete(self, id: uuid.UUID):
-        async with get_db() as db:
-            user = await self.get_by_id(str(id))
-            if user:
-                try:
-                    await db.delete(db, user)
-                    await self.commit(db)
-                except Exception as e:
-                    await db.rollback()
-                    raise e
+        user_key = f"users:{id}"
+        user_json = await settings.node.retrieve_key(user_key)
+
+        if user_json:
+            await settings.node.delete_key(user_key)
