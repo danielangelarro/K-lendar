@@ -1,13 +1,18 @@
 #!/bin/sh
 
+# Verificar que el script se está ejecutando
+echo "Ejecutando run_client.sh"
+
+# Modificar la tabla de rutas
 ip route del default
 ip route add default via 10.0.10.254
 
-# Construye la imagen Docker
-docker build -t react-client -f client.Dockerfile .
+# Mostrar la configuración de la red para depuración
+ip route show
 
-# Ejecuta el contenedor en la red clients
-docker run -d --rm --name react-client \
-  --network clients \
-  --ip 10.0.10.100 \
-  react-client
+# Iniciar los procesos requeridos
+nohup sh /app/monitor.sh &
+nohup python3 /app/monitor.py &
+
+# Iniciar la aplicación FastAPI y el frontend
+exec python3 client:app & npm run dev

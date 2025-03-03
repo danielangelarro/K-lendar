@@ -1,5 +1,6 @@
 import threading
-from fastapi import FastAPI, WebSocket
+import time
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import socket
 import asyncio
 import requests
@@ -36,47 +37,47 @@ def listen_multicast():
         if DELIMITER in message:
             ip, port = message.split(DELIMITER)
             active_servers.add((ip, port))
-            print(active_servers)
 
 
 def check_servers():
     while True:
         for ip, port in list(active_servers):
+            port_int = int(port) - 3000
             try:
-                response = requests.get(f"http://{ip}:{port}/ping", timeout=2)
+                response = requests.get(f"http://{ip}:{port_int}/ping", timeout=5)
                 if response.status_code != 200:
                     active_servers.remove((ip, port))
             except requests.RequestException:
-                active_servers.remove((ip, port))
-        # await asyncio.sleep(1)
+                if (ip, port) in active_servers:
+                    active_servers.remove((ip, port))
+        print(active_servers)
+        asyncio.sleep(5)
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-
-    print(f"Client accepted")
-
-    while True:
-        if active_servers:
-            print("active_servers:", active_servers)
-
-            ip, port = next(iter(active_servers))
-            port = int(port) - 3000
-
-            print(f"ip: {ip} - port: {port}")
-            try:
-                response = requests.get(f"http://localhost:{port}/ping", timeout=2)
-
-                print("Response status:", response.status.code)
-
-                if response.status_code == 200:
-                    await websocket.send_text(f"{ip}{DELIMITER}{port}")
-                elif (ip, port) in active_servers:
-                    active_servers.remove((ip, port))
-            except requests.RequestException:
-                active_servers.remove((ip, port))
-        await asyncio.sleep(5)
+    print("WebSocket client accepted")
+    try:
+        while True:
+            if active_servers:
+                # Selecciona un servidor activo (puedes mejorar la selección si es necesario)
+                ip, port = next(iter(active_servers))
+                port_int = int(port) - 3000
+                print(f"ip: {ip} - port: {port}")
+                try:
+                    response = requests.get(f"http://{ip}:{port_int}/ping", timeout=5)
+                    print("Response status:", response.status_code)
+                    if response.status_code == 200:
+                        await websocket.send_text(f"{ip}{DELIMITER}{port_int}")
+                    else:
+                        active_servers.discard((ip, port))
+                except requests.RequestException as e:
+                    print("Error al comprobar servidor:", e)
+                    active_servers.discard((ip, port))
+            await asyncio.sleep(3)
+    except WebSocketDisconnect:
+        print("WebSocket client disconnected")
 
 
 @app.on_event("startup")
@@ -85,8 +86,6 @@ async def startup_event():
     threading.Thread(target=listen_multicast, daemon=True).start()
     threading.Thread(target=check_servers, daemon=True).start()
     print("Iniciado correctamente!")
-    # asyncio.create_task(listen_multicast)
-    # asyncio.create_task(check_servers())
 
 
 if __name__ == "__main__":

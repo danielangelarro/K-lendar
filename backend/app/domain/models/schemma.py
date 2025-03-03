@@ -133,3 +133,4 @@ class KeyValueRequest(BaseModel):
 
 class KeysPayload(BaseModel):
     keys: List[KeyValueRequest]
+    updated_at: datetime | None = None

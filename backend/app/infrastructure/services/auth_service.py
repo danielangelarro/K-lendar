@@ -1,3 +1,4 @@
+import hashlib
 import jwt
 import datetime
 import inject
@@ -19,9 +20,12 @@ from app.settings import settings
 
 class AuthService(IAuthService):
     repo_instance: IUserRepository = inject.attr(IUserRepository)
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    # pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+    def getShaRepr(self, data: str) -> int:
+        return str(int(hashlib.sha1(data.encode()).hexdigest(), 16))
+            
     async def register_user(self, user: UserCreate) -> UserResponse:
         user.password = self.get_password_hash(user.password)
         return await self.repo_instance.create(user)
@@ -40,10 +44,13 @@ class AuthService(IAuthService):
         return encoded_jwt
 
     def verify_password(self, plain_password, hashed_password):
-        return self.pwd_context.verify(plain_password, hashed_password)
+        # return self.pwd_context.verify(plain_password, hashed_password)
+        new_passw = self.getShaRepr(plain_password)
+        return new_passw == hashed_password
 
     def get_password_hash(self, password):
-        return self.pwd_context.hash(password)
+        return self.getShaRepr(password)
+        # return self.pwd_context.hash(password)
 
     async def get_current_user(self, token: str) -> UserResponse:
         credentials_exception = HTTPException(

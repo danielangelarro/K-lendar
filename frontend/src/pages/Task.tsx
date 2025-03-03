@@ -111,11 +111,11 @@ const TaskPage = () => {
     setModalEditTask(true);
   };
 
-  const filtrar = async (start_date: Date, end_date: Date) => {
+  const filtrar = async (start_datetime: Date, end_datetime: Date) => {
     try {
       // Pedir las tareas en ese rango
       setIsLoading(true);
-      const response = await api.get(`/agendas/${start_date.toISOString()}/${end_date.toISOString()}`);
+      const response = await api.get(`/agendas/${start_datetime.toISOString()}/${end_datetime.toISOString()}`);
       
       // Actualizar estado local
       setTasks(response.data.events); 

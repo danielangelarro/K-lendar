@@ -2,6 +2,8 @@ FROM node:14-alpine AS builder
 
 WORKDIR /app
 
+RUN apk add --no-cache python3 py3-pip netcat-openbsd socat iproute2 dos2unix
+
 COPY package*.json ./
 COPY . .
 
@@ -10,15 +12,18 @@ RUN npm cache clean --force && \
     npm install && \
     npm rebuild esbuild
 
-# Instalar Python, netcat y socat para manejar conexiones multicast
-RUN apk add --no-cache python3 py3-pip netcat-openbsd socat iproute2
 RUN pip3 install websockets fastapi uvicorn requests
 
-# Copiar los scripts de supervisión al contenedor
+# Copiar los scripts de supervisión y configuración de red
 COPY monitor.py /app/monitor.py
 COPY monitor.sh /app/monitor.sh
 COPY update_env.sh /app/update_env.sh
-RUN chmod +x /app/monitor.sh /app/update_env.sh
+COPY run_client.sh /app/run_client.sh
+
+# Asegurar que los scripts tengan permisos de ejecución y formato correcto
+RUN chmod +x /app/monitor.sh /app/update_env.sh /app/run_client.sh \
+    && dos2unix /app/monitor.sh /app/update_env.sh /app/run_client.sh \
+    && sed -i 's/\r$//' /app/run_client.sh
 
 EXPOSE 5173
 EXPOSE 8765
@@ -27,5 +32,5 @@ EXPOSE 8765
 ENV FASTAPI_HOST=0.0.0.0
 ENV FASTAPI_PORT=8765
 
-# Ejecutar el script en segundo plano y luego iniciar la aplicación
-CMD ["sh", "-c", "uvicorn client:app --host $FASTAPI_HOST --port $FASTAPI_PORT & npm run dev"]
+# Ejecutar el script de arranque al iniciar el contenedor
+CMD ["/bin/sh", "/app/run_client.sh"]

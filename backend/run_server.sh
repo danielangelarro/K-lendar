@@ -1,13 +1,14 @@
 #!/bin/sh
 
+# Verificar que el script se está ejecutando
+echo "Ejecutando run.sh"
+
+# Modificar la tabla de rutas
 ip route del default
 ip route add default via 10.0.11.254
 
-# Construye la imagen Docker
-docker build -t fastapi-server -f server.Dockerfile .
+# Verificar la ruta por depuración
+ip route show
 
-# Ejecuta el contenedor en la red servers
-docker run -d --rm --name fastapi-server \
-  --network servers \
-  --ip 10.0.11.100 \
-  fastapi-server
+# Iniciar la aplicación
+exec poetry run python main.py

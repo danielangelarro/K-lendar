@@ -51,6 +51,8 @@ class UserRepository(IUserRepository):
         users_json = settings.node.ref.get_all_filtered(json.dumps(payload))
         users_list = json.loads(users_json) if users_json else []
 
+        print("user_list", users_list)
+
         if not users_list:
             return None
 

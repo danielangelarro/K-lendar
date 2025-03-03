@@ -9,9 +9,9 @@ from app.domain.models.schemma import EventResponse, UserAgendaResponse
 
 class IAgendaRepository(BaseRepository):
     @abstractmethod
-    async def get_user_agenda(self, user_id: uuid.UUID, start_date: datetime, end_date: datetime) -> UserAgendaResponse:      
+    async def get_user_agenda(self, user_id: uuid.UUID, start_datetime: datetime, end_datetime: datetime) -> UserAgendaResponse:      
         pass
 
     @abstractmethod
-    async def get_group_agenda(self, group_id: uuid.UUID, start_date: datetime, end_date: datetime) -> List[EventResponse]:
+    async def get_group_agenda(self, group_id: uuid.UUID, start_datetime: datetime, end_datetime: datetime) -> List[EventResponse]:
         pass

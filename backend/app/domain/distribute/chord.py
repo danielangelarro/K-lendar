@@ -53,6 +53,7 @@ TRANSFER_KEYS = 11
 GET_ALL_KEYS = 12
 DELETE_KEY = 13
 GET_ALL_FILTERED = 14
+PING = 15
 
 
 def getShaRepr(data: str) -> int:
@@ -68,51 +69,49 @@ class ChordNodeReference:
     def _send_data(self, op: int, data: Optional[str] = None) -> bytes:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.ip, self.port))
+                print(f"Enviando...: (op {op}, data: {data}) a {self.ip}:{self.port}")
+                s.connect((self.ip, int(self.port)))
                 message = f"{op}{DELIMITER}{data if data is not None else ''}"
                 s.sendall(message.encode("utf-8"))
-                logging.info(f"Enviado: {message} a {self.ip}:{self.port}")
+                print(f"Enviado: {message} a {self.ip}:{self.port}")
                 return s.recv(4096)
         except Exception as e:
-            logging.error(
+            print(
                 f"Error enviando datos (op {op}) a {self.ip}:{self.port} - {e}"
             )
             return b""
 
     def find_successor(self, id_val: int) -> "ChordNodeReference":
         response = self._send_data(FIND_SUCCESSOR, str(id_val)).decode().split(DELIMITER)
-        logging.info(f"find_successor({id_val}) -> {response}")
+        print(f"find_successor({id_val}) -> {response}")
         return ChordNodeReference(response[1], self.port)
 
     def find_predecessor(self, id_val: int) -> "ChordNodeReference":
         response = self._send_data(FIND_PREDECESSOR, str(id_val)).decode().split(DELIMITER)
-        logging.info(f"find_predecessor({id_val}) -> {response}")
-        return ChordNodeReference(response[1], self.port)
+        print(f"find_predecessor({id_val}) -> {response}")
+        return ChordNodeReference(response[1], response[2])
 
     @property
     def succ(self) -> "ChordNodeReference":
         response = self._send_data(GET_SUCCESSOR).decode().split(DELIMITER)
-        logging.info(f"GET_SUCCESSOR -> {response}")
-        return ChordNodeReference(response[1], self.port)
+        print(f"GET_SUCCESSOR -> {response}")
+        return ChordNodeReference(response[1], response[2])
 
     @property
     def pred(self) -> "ChordNodeReference":
         response = self._send_data(GET_PREDECESSOR).decode().split(DELIMITER)
-        logging.info(f"GET_PREDECESSOR -> {response}")
+        print(f"GET_PREDECESSOR -> {response}")
         return ChordNodeReference(response[1], self.port)
 
     def notify(self, node: "ChordNodeReference"):
-        logging.info(f"Notificando a {self.ip}:{self.port} con nodo {node.ip}")
-        self._send_data(NOTIFY, f"{node.id}{DELIMITER}{node.ip}")
-
-    def check_predecessor(self):
-        self._send_data(CHECK_PREDECESSOR)
+        print(f"Notificando a {self.ip}:{self.port} con nodo {node.ip}")
+        self._send_data(NOTIFY, f"{node.id}{DELIMITER}{node.ip}{DELIMITER}{node.port}")
 
     def closest_preceding_finger(self, id_val: int) -> "ChordNodeReference":
         response = (
             self._send_data(CLOSEST_PRECEDING_FINGER, str(id_val)).decode().split(DELIMITER)
         )
-        logging.info(f"closest_preceding_finger({id_val}) -> {response}")
+        print(f"closest_preceding_finger({id_val}) -> {response}")
         return ChordNodeReference(response[1], self.port)
 
     def store_key(self, key: str, value: str):
@@ -126,6 +125,10 @@ class ChordNodeReference:
 
     def get_all_filtered(self, query_payload: str) -> str:
         response = self._send_data(GET_ALL_FILTERED, query_payload)
+        return response.decode()
+    
+    def ping(self):
+        response = self._send_data(PING)
         return response.decode()
 
     def __str__(self) -> str:
@@ -142,19 +145,18 @@ class ChordNode:
         self.port = port
         self.ref = ChordNodeReference(self.ip, self.port)
         self.succ = self.ref
-        self.pred = None
+        self.pred = self.ref
         self.m = m
         self.finger = [self.ref] * self.m
         self.next = 0
         self.db_lock = threading.Lock()
-        logging.info(f"Inicializado ChordNode en {self.ip}:{self.port}")
+        print(f"Inicializado ChordNode en {self.ip}:{self.port}")
 
     def start_services(self):
         """Inicia los hilos del protocolo Chord."""
-        logging.info("Iniciando servicios de Chord...")
-        threading.Thread(target=self.stabilize, daemon=True).start()
+        print("Iniciando servicios de Chord...")
         threading.Thread(target=self.fix_fingers, daemon=True).start()
-        threading.Thread(target=self.check_predecessor, daemon=True).start()
+        threading.Thread(target=self.check_predecessor_successor, daemon=True).start()
         threading.Thread(target=self.start_server, daemon=True).start()
         threading.Thread(target=self.announce_self, daemon=True).start()
         threading.Thread(target=self.run_multicast_listener, daemon=True).start()
@@ -166,10 +168,8 @@ class ChordNode:
         while True:
             try:
                 sock.sendto(message, (MULTICAST_GROUP, PROXY_MULTICAST_PORT))
-                logging.info(f"Anunciando presencia: {self.ip}:{self.port}")
                 print(f"Anunciando presencia: {self.ip}:{self.port}")
             except Exception as e:
-                logging.error(f"Error en announce_self: {e}")
                 print(f"Error en announce_self: {e}")
             time.sleep(5)
 
@@ -189,13 +189,13 @@ class ChordNode:
             try:
                 data, addr = sock.recvfrom(1024)
                 node_ip, node_port = data.decode().split(DELIMITER)
-                logging.info(f"Descubierto nodo: {node_ip}:{node_port}")
                 print(f"Descubierto nodo: {node_ip}:{node_port}")
-                if node_ip != self.ip and (self.succ.id == self.id or self.succ.pred != self.id):
+                if node_ip != self.ip:
                     await self.join(ChordNodeReference(node_ip, int(node_port)))
             except Exception as e:
-                logging.error(f"Error en multicast_listener: {e}")
                 print(f"Error en multicast_listener: {e}")
+            
+            time.sleep(5)
 
     def _inbetween(self, k: int, start: int, end: int) -> bool:
         if start < end:
@@ -220,49 +220,28 @@ class ChordNode:
         return self.ref
 
     async def join(self, node: "ChordNodeReference"):
-        logging.info(f"Uniéndose al nodo: {node.ip}:{node.port}")
-        if node:
-            self.pred = None
-            self.succ = node.find_successor(self.id)
-            logging.info(f"Nuevo sucesor determinado: {self.succ.ip}:{self.succ.port}")
+        print(f"Uniéndose al nodo: {node.ip}:{node.port}")
+        if self.id < self.succ.id:
+            if self.id < node.id < self.succ.id:
+                self.succ = node
+                self.succ.notify(self.ref)
+        elif self.id == self.succ.id:
+            self.succ = node
             self.succ.notify(self.ref)
-            # Transferir llaves al nuevo nodo
             await self.transfer_keys_to(self.succ)
-        else:
-            self.succ = self.ref
-            self.pred = None
-
-    def stabilize(self):
-        while True:
-            try:
-                if self.succ.id != self.id:
-                    x = self.succ.pred
-                    if (
-                        x
-                        and x.id != self.id
-                        and self._inbetween(x.id, self.id, self.succ.id)
-                    ):
-                        logging.info(
-                            f"Stabilize: actualizando sucesor de {self.ip} a {x.ip}"
-                        )
-                        self.succ = x
-                    self.succ.notify(self.ref)
-                else:
-                    logging.info("Stabilize: sucesor es el mismo nodo.")
-            except Exception as e:
-                logging.error(f"Error en stabilize: {e}")
-            time.sleep(10)
+        elif node.id < self.succ.id:
+            self.succ = node
+        
+        if self.id > self.pred.id:
+            if self.id > node.id > self.pred.id:
+                self.pred = node
+        elif node.id == self.pred.id or node.id > self.pred.id:
+            self.pred = node
 
     async def notify(self, node: "ChordNodeReference"):
-        logging.info(f"Recibiendo notify de {node.ip}:{node.port}")
         if node.id == self.id:
             return
-        if not self.pred or self._inbetween(node.id, self.pred.id, self.id):
-            old_pred = self.pred
-            self.pred = node
-            logging.info(f"Actualizado predecesor a {node.ip}:{node.port}")
-            if old_pred is None or old_pred.id != node.id:
-                await self.transfer_keys_to(node)
+        await self.transfer_keys_to(node)
 
     def fix_fingers(self):
         while True:
@@ -271,23 +250,35 @@ class ChordNode:
                 self.finger[self.next] = self.find_succ(
                     (self.id + 2**self.next) % (2**self.m)
                 )
-                logging.info(
+                print(
                     f"finger[{self.next}] actualizado a {self.finger[self.next].ip}"
                 )
             except Exception as e:
-                logging.error(f"Error en fix_fingers: {e}")
-            time.sleep(10)
+                print(f"Error en fix_fingers: {e}")
+            time.sleep(5)
 
-    def check_predecessor(self):
+    def check_predecessor_successor(self):
         while True:
             try:
-                if self.pred:
-                    self.pred.check_predecessor()
-                    logging.info("check_predecessor ejecutado")
+                if self.succ.id != self.id:
+                    response = self.succ.ping()
+
+                    if response != "Ok":
+                        self.succ = self.ref
             except Exception as e:
-                logging.error(f"Error en check_predecessor: {e}")
-                self.pred = None
-            time.sleep(10)
+                print(f"Error en check_predecessor_successor (succ): {e}")
+                self.succ = self.ref
+            
+            try:
+                if self.pred.id != self.id:
+                    response = self.pred.ping()
+
+                    if response != "Ok":
+                        self.pred = self.ref
+            except Exception as e:
+                print(f"Error en check_predecessor_successor (pred): {e}")
+                self.pred = self.ref
+            time.sleep(3)
 
     # ------------------ Métodos de acceso a datos usando SQLAlchemy ------------------
 
@@ -298,9 +289,15 @@ class ChordNode:
                                              "end_datetime": {"lte": "..."},
                                              "creator": "..." } }
         Construye la consulta usando SQLAlchemy y devuelve los resultados en JSON.
+        Ahora, además de obtener los datos del nodo actual, recorre el anillo Chord para
+        obtener los datos de TODOS los nodos.
         """
         try:
-            query_data = json.loads(query_payload)
+            query_data: dict = json.loads(query_payload)
+
+            if "visited" not in query_data:
+                query_data.setdefault("visited", [])
+
             table = query_data.get("table")
             filters = query_data.get("filters", {})
             Model = TABLE_MAP.get(table)
@@ -330,10 +327,11 @@ class ChordNode:
             if conditions:
                 query = query.where(and_(*conditions))
 
+            all_items = []
+            # Consulta local
             async with get_db() as session:
                 result = await session.execute(query)
                 rows = result.scalars().all()
-                items = []
                 for row in rows:
                     row_dict = {}
                     for k, v in row.__dict__.items():
@@ -342,11 +340,26 @@ class ChordNode:
                                 row_dict[k] = v.isoformat()
                             else:
                                 row_dict[k] = v
-                    items.append(row_dict)
+                    all_items.append(row_dict)
 
-            return json.dumps(items)
+            current_node = self.succ
+            
+            print("=====+++++=====>", query_data.get("visited", []), f"({current_node.id})")
+
+            try:
+                query_data.get("visited", []).append(current_node.id)
+                remote_response = current_node.get_all_filtered(json.dumps(query_data))
+                remote_items = json.loads(remote_response)
+                all_items.extend(remote_items)
+            except Exception as e:
+                print(f"Error al recuperar datos del nodo {current_node.ip}: {e}")
+
+            current_node = current_node.succ
+            
+            print("XXXXXXXXXX", all_items)
+            return json.dumps(all_items)
         except Exception as e:
-            logging.error(f"Error en _handle_get_all_filtered: {e}")
+            print(f"Error en _handle_get_all_filtered: {e}")
             return json.dumps([])
 
     async def store_key(self, key: str, value: str, replica: bool = False):
@@ -359,7 +372,7 @@ class ChordNode:
         primary_node = self.find_succ(key_hash)
         if primary_node.id == self.id:
             if ":" not in key:
-                logging.error(f"Clave inválida: {key}")
+                print(f"Clave inválida: {key}")
                 return
             table, id = key.split(":", 1)
             try:
@@ -374,11 +387,11 @@ class ChordNode:
                             # Si no es un formato de fecha válido, dejarlo como está
                             pass
             except json.JSONDecodeError as e:
-                logging.error(f"Error parseando valor para {key}: {e}")
+                print(f"Error parseando valor para {key}: {e}")
                 return
             Model = TABLE_MAP.get(table)
             if not Model:
-                logging.error(f"Modelo para tabla '{table}' no encontrado.")
+                print(f"Modelo para tabla '{table}' no encontrado.")
                 return
             data["id"] = id
 
@@ -389,18 +402,18 @@ class ChordNode:
 
             await _store()
             
-            logging.info(f"Clave '{key}' almacenada en nodo primario {self.ip}")
+            print(f"Clave '{key}' almacenada en nodo primario {self.ip}")
             if not replica:
                 try:
                     succ1 = self.succ
                     succ2 = succ1.succ
                     succ1._send_data(REPLICATE_KEY, f"{key}{DELIMITER}{value}")
                     succ2._send_data(REPLICATE_KEY, f"{key}{DELIMITER}{value}")
-                    logging.info(f"Clave '{key}' replicada a {succ1.ip} y {succ2.ip}")
+                    print(f"Clave '{key}' replicada a {succ1.ip} y {succ2.ip}")
                 except Exception as e:
-                    logging.error(f"Error replicando la clave '{key}': {e}")
+                    print(f"Error replicando la clave '{key}': {e}")
         else:
-            logging.info(
+            print(
                 f"Redirigiendo clave '{key}' al nodo primario {primary_node.ip}"
             )
             primary_node.store_key(key, value)
@@ -408,17 +421,17 @@ class ChordNode:
     async def direct_store_key(self, key: str, value: str):
         """Almacena la llave directamente (por ejemplo, en transferencia recibida)."""
         if ":" not in key:
-            logging.error(f"Clave inválida: {key}")
+            print(f"Clave inválida: {key}")
             return
         table, id = key.split(":", 1)
         try:
             data = json.loads(value)
         except json.JSONDecodeError as e:
-            logging.error(f"Error parseando valor para {key}: {e}")
+            print(f"Error parseando valor para {key}: {e}")
             return
         Model = TABLE_MAP.get(table)
         if not Model:
-            logging.error(f"Modelo para tabla '{table}' no encontrado.")
+            print(f"Modelo para tabla '{table}' no encontrado.")
             return
         data["id"] = id
 
@@ -428,7 +441,7 @@ class ChordNode:
                 await session.commit()
 
         await _store()
-        logging.info(f"Clave '{key}' almacenada directamente (transferencia recibida)")
+        print(f"Clave '{key}' almacenada directamente (transferencia recibida)")
 
     async def retrieve_key(self, key: str) -> str:
         key_hash = getShaRepr(key)
@@ -439,7 +452,7 @@ class ChordNode:
             table, id = key.split(":", 1)
             Model = TABLE_MAP.get(table)
             if not Model:
-                logging.error(f"Modelo para tabla '{table}' no encontrado.")
+                print(f"Modelo para tabla '{table}' no encontrado.")
                 return None
 
             async def _retrieve():
@@ -459,7 +472,7 @@ class ChordNode:
 
             return await _retrieve() or ""
         else:
-            logging.info(
+            print(
                 f"Redirigiendo recuperación de clave '{key}' al nodo {primary_node.ip}"
             )
             return primary_node.retrieve_key(key)
@@ -469,12 +482,12 @@ class ChordNode:
         primary_node = self.find_succ(key_hash)
         if primary_node.id == self.id:
             if ":" not in key:
-                logging.error(f"Clave inválida: {key}")
+                print(f"Clave inválida: {key}")
                 return
             table, id = key.split(":", 1)
             Model = TABLE_MAP.get(table)
             if not Model:
-                logging.error(f"Modelo para tabla '{table}' no encontrado.")
+                print(f"Modelo para tabla '{table}' no encontrado.")
                 return
 
             async def _delete():
@@ -485,22 +498,22 @@ class ChordNode:
                         await session.commit()
 
             await _delete()
-            logging.info(f"Clave '{key}' borrada en nodo primario {self.ip}")
+            print(f"Clave '{key}' borrada en nodo primario {self.ip}")
             if not replicate:
                 try:
                     succ1 = self.succ
                     succ2 = succ1.succ
                     succ1._send_data(DELETE_KEY, key)
                     succ2._send_data(DELETE_KEY, key)
-                    logging.info(
+                    print(
                         f"Clave '{key}' borrada replicada en {succ1.ip} y {succ2.ip}"
                     )
                 except Exception as e:
-                    logging.error(
+                    print(
                         f"Error replicando el borrado de la clave '{key}': {e}"
                     )
         else:
-            logging.info(
+            print(
                 f"Redirigiendo borrado de clave '{key}' al nodo primario {primary_node.ip}"
             )
             primary_node.delete_key(key)
@@ -516,11 +529,12 @@ class ChordNode:
                         keys.append(f"{table}:{id}")
 
         await _get_all()
-        logging.info(f"Recuperando claves desde {self.ip}: {keys}")
+        print(f"Recuperando claves desde {self.ip}: {keys}")
         return keys
 
     async def transfer_keys_to(self, new_node: "ChordNodeReference"):
-        logging.info(f"Iniciando transferencia de llaves a {new_node.ip}")
+        print(f"Iniciando transferencia de llaves a {new_node.ip}")
+        updated_at = datetime.min
         keys_to_transfer = []
         tables = [
             "users",
@@ -533,6 +547,9 @@ class ChordNode:
         ]
 
         async def _transfer():
+            nonlocal updated_at
+            keys_to_transfer_local = []
+
             async with get_db() as session:
                 for table in tables:
                     Model = TABLE_MAP.get(table)
@@ -552,29 +569,38 @@ class ChordNode:
                                     else:
                                         data[k] = v
                             
-                            keys_to_transfer.append(
+                            if data["updated_at"] and data["updated_at"] > updated_at:
+                                updated_at = data["updated_at"]
+                            else:
+                                updated_at = data["created_at"]
+
+
+                            keys_to_transfer_local.append(
                                 {"key": key, "value": json.dumps(data)}
                             )
-            return keys_to_transfer
+            return keys_to_transfer_local
 
         keys_to_transfer = await _transfer()
-        logging.info(f"keys_to_transfer data found: {keys_to_transfer}")
+        print(f"keys_to_transfer data found: {keys_to_transfer}")
         if keys_to_transfer:
             try:
-                payload = {"keys": keys_to_transfer}
-                url = f"http://{new_node.ip}:5000/receive_keys"
-                logging.info(
+                payload = {
+                    "keys": keys_to_transfer,
+                    "updated_at": updated_at
+                }
+                url = f"http://{new_node.ip}:{int(new_node.port) - 3000}/receive_keys"
+                print(
                     f"Enviando {len(keys_to_transfer)} llaves a {new_node.ip} vía REST"
                 )
                 response = requests.post(url, json=payload, timeout=5)
                 if response.status_code == 200:
-                    logging.info(f"Transferencia de llaves a {new_node.ip} completada")
+                    print(f"Transferencia de llaves a {new_node.ip} completada")
                 else:
-                    logging.error(
+                    print(
                         f"Error en la transferencia de llaves: {response.status_code}"
                     )
             except Exception as e:
-                logging.error(f"Error transfiriendo llaves al nuevo nodo: {e}")
+                print(f"Error transfiriendo llaves al nuevo nodo: {e}")
 
     async def refresh_replication(self):
         async def _refresh():
@@ -596,11 +622,11 @@ class ChordNode:
                     value = await self.retrieve_key(key)
                     succ1._send_data(REPLICATE_KEY, f"{key}{DELIMITER}{value}")
                     succ2._send_data(REPLICATE_KEY, f"{key}{DELIMITER}{value}")
-                    logging.info(
+                    print(
                         f"Refrescada replicación de '{key}' en {succ1.ip} y {succ2.ip}"
                     )
                 except Exception as e:
-                    logging.error(f"Error refrescando replicación para '{key}': {e}")
+                    print(f"Error refrescando replicación para '{key}': {e}")
 
     async def refresh_replication_loop(self):
         while True:
@@ -608,7 +634,7 @@ class ChordNode:
             time.sleep(60)
 
     def start_server(self):
-        logging.info(f"Iniciando servidor en {self.ip}:{self.port}")
+        print(f"Iniciando servidor en {self.ip}:{self.port}")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((self.ip, self.port))
@@ -616,12 +642,12 @@ class ChordNode:
             while True:
                 try:
                     conn, addr = s.accept()
-                    logging.info(f"Conexión aceptada de {addr}")
+                    print(f"Conexión aceptada de {addr}")
                     threading.Thread(
                         target=self.handle_connection, args=(conn,), daemon=True
                     ).start()
                 except Exception as e:
-                    logging.error(f"Error aceptando conexión: {e}")
+                    print(f"Error aceptando conexión: {e}")
 
     def handle_connection(self, conn):
         try:
@@ -640,18 +666,15 @@ class ChordNode:
                 response = f"{node_ref.id}{DELIMITER}{node_ref.ip}".encode()
             elif option == GET_SUCCESSOR:
                 node_ref = self.succ if self.succ else self.ref
-                response = f"{node_ref.id}{DELIMITER}{node_ref.ip}".encode()
+                response = f"{node_ref.id}{DELIMITER}{node_ref.ip}{DELIMITER}{node_ref.port}".encode()
             elif option == GET_PREDECESSOR:
                 node_ref = self.pred if self.pred else self.ref
-                response = f"{node_ref.id}{DELIMITER}{node_ref.ip}".encode()
+                response = f"{node_ref.id}{DELIMITER}{node_ref.ip}{DELIMITER}{node_ref.port}".encode()
             elif option == NOTIFY:
                 id = int(data[1])
                 ip = data[2]
-                logging.info(f"handle_connection: NOTIFY recibido de {ip}")
-                asyncio.run(self.notify(ChordNodeReference(ip, self.port)))
-                response = b""
-            elif option == CHECK_PREDECESSOR:
-                self.check_predecessor()
+                port = data[3]
+                asyncio.run(self.notify(ChordNodeReference(ip, port)))
                 response = b""
             elif option == CLOSEST_PRECEDING_FINGER:
                 id = int(data[1])
@@ -659,34 +682,31 @@ class ChordNode:
                 response = f"{node_ref.id}{DELIMITER}{node_ref.ip}".encode()
             elif option == STORE_KEY:
                 key, value = data[1], data[2]
-                logging.info(f"handle_connection: STORE_KEY para '{key}'")
-                self.store_key(key, value)
+                asyncio.run(self.store_key(key, value))
                 response = b""
             elif option == RETRIEVE_KEY:
                 key = data[1]
-                logging.info(f"handle_connection: RETRIEVE_KEY para '{key}'")
                 value = asyncio.run(self.retrieve_key(key))
                 response = value.encode() if value else b""
             elif option == REPLICATE_KEY:
                 key, value = data[1], data[2]
-                logging.info(f"handle_connection: REPLICATE_KEY para '{key}'")
-                self.store_key(key, value, replica=True)
+                asyncio.run(self.store_key(key, value, replica=True))
                 response = b""
             elif option == GET_ALL_KEYS:
-                logging.info("handle_connection: GET_ALL_KEYS")
                 asyncio.run(self.get_all_keys())
                 response = b""
             elif option == DELETE_KEY:
                 key = data[1]
-                logging.info(f"handle_connection: DELETE_KEY para '{key}'")
                 asyncio.run(self.delete_key(key, replicate=True))
                 response = b""
             elif option == GET_ALL_FILTERED:
                 query_payload = data[1] if len(data) > 1 else "{}"
                 result_json = asyncio.run(self._handle_get_all_filtered(query_payload))
                 response = result_json.encode()
+            elif option == PING:
+                response = "OK".encode()
             conn.sendall(response)
         except Exception as e:
-            logging.error(f"Error en handle_connection: {e}")
+            print(f"Error en handle_connection: {e}")
         finally:
             conn.close()

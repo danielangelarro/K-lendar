@@ -14,7 +14,7 @@ class AgendaRepository(IAgendaRepository):
     group_mapper = GroupMapper()
 
     async def get_user_agenda(
-        self, user_id: uuid.UUID, start_date: datetime, end_date: datetime
+        self, user_id: uuid.UUID, start_datetime: datetime, end_datetime: datetime
     ) -> UserAgendaResponse:
         # Recuperar la información del usuario desde el anillo
         user_json = await settings.node.retrieve_key(f"users:{user_id}")
@@ -27,8 +27,8 @@ class AgendaRepository(IAgendaRepository):
             {
                 "table": "events",
                 "filters": {
-                    "start_datetime": {"gte": start_date.isoformat()},
-                    "end_datetime": {"lte": end_date.isoformat()},
+                    "start_datetime": {"gte": start_datetime.isoformat()},
+                    "end_datetime": {"lte": end_datetime.isoformat()},
                     "creator": str(user_id),
                 },
             }
@@ -54,7 +54,7 @@ class AgendaRepository(IAgendaRepository):
         return UserAgendaResponse(user_id=user_id, name=user["username"], events=events)
 
     async def get_group_agenda(
-        self, group_id: uuid.UUID, start_date: datetime, end_date: datetime
+        self, group_id: uuid.UUID, start_datetime: datetime, end_datetime: datetime
     ) -> List[UserAgendaResponse]:
         # Se consulta la tabla "member" para obtener los miembros del grupo
         query_payload = json.dumps(
@@ -66,6 +66,6 @@ class AgendaRepository(IAgendaRepository):
 
         responses = []
         for mem_id in member_ids:
-            agenda = await self.get_user_agenda(uuid.UUID(mem_id), start_date, end_date)
+            agenda = await self.get_user_agenda(uuid.UUID(mem_id), start_datetime, end_datetime)
             responses.append(agenda)
         return responses

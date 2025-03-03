@@ -67,13 +67,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
     IP = socket.gethostbyname(socket.gethostname())
+    PORT = int(os.getenv('PORT', 5000))
     
     class Config:
         env_file = ".env"
     
     @property
     def chord_service(self):
-        return ChordService(self.IP)
+        return ChordService(self.IP, self.PORT + 3000)
 
     @property
     def node(self):
