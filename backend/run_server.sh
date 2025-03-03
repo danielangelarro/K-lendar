@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ip route del default
-ip route add default via 10.0.11.100
+ip route add default via 10.0.11.254
 
 # Construye la imagen Docker
 docker build -t fastapi-server -f server.Dockerfile .

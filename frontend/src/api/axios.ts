@@ -11,11 +11,10 @@ const api = axios.create({
 
 // Obtener el hostname actual del navegador
 const currentHost = window.location.hostname; // devuelve la IP o dominio actual
-const WEBSOCKET_PORT = 8765; // Puerto configurado para el WebSocket
-const WEBSOCKET_URL = `ws://${currentHost}:${WEBSOCKET_PORT}`;
-console.log("Conectando al WebSocket en:", WEBSOCKET_URL);
+const WEBSOCKET_URL = `ws://${currentHost}:8000/ws`; // Conectar al WebSocket del servidor FastAPI
+console.log('Conectando al WebSocket en:', WEBSOCKET_URL);
 
-// Conexión al WebSocket para recibir actualizaciones de NODE_IP y NODE_PORT
+// Conexión al WebSocket para recibir actualizaciones de IP y puerto
 const socket = new WebSocket(WEBSOCKET_URL);
 
 socket.addEventListener('open', () => {
@@ -24,38 +23,25 @@ socket.addEventListener('open', () => {
 
 socket.addEventListener('message', (event) => {
   console.log('Mensaje recibido del WebSocket:', event.data);
-  
-  // Se asume que el mensaje tiene el formato:
-  // "NODE_IP=192.168.1.10, NODE_PORT=6000"
-  const message = event.data;
-  const parts = message.split(',');
-  let newIP = null;
-  let newPort = null;
-  
-  parts.forEach((part: string) => {
-    const [key, value] = part.split('=').map(s => s.trim());
-    if (key === 'NODE_IP') {
-      newIP = value;
-    } else if (key === 'NODE_PORT') {
-      newPort = value;
-    }
-  });
-  
+
+  // Se asume que el mensaje tiene el formato "192.168.1.10:6000"
+  const [newIP, newPort] = event.data.split('<<DELIM>>');
+
   if (newIP && newPort) {
-    const newBaseURL = `http://${newIP}:${newPort}`;
+    const newBaseURL = `http://localhost:${newPort}`;
     if (currentBaseURL !== newBaseURL) {
       console.log(`Actualizando baseURL de ${currentBaseURL} a ${newBaseURL}`);
       currentBaseURL = newBaseURL;
       api.defaults.baseURL = newBaseURL;
     }
   } else {
-    console.error('Mensaje del WebSocket en formato incorrecto:', message);
+    console.error('Mensaje del WebSocket en formato incorrecto:', event.data);
   }
 });
 
 // Interceptor para actualizar la baseURL y añadir el token antes de cada petición
 api.interceptors.request.use(
-  config => {
+  (config) => {
     // Se actualiza la baseURL con el valor más reciente recibido vía WebSocket
     config.baseURL = currentBaseURL;
     const token = localStorage.getItem('authToken');
@@ -64,15 +50,44 @@ api.interceptors.request.use(
     }
     return config;
   },
-  error => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Interceptor para manejar respuestas y mostrar notificaciones
 api.interceptors.response.use(
-  response => response,
-  error => {
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (!originalRequest._retry) {
+      originalRequest._retry = 0;
+    }
+
+    if (originalRequest._retry < 3) {
+      originalRequest._retry += 1;
+      console.log(`Reintentando petición... Intento ${originalRequest._retry}`);
+
+      // Esperar a recibir un nuevo mensaje del WebSocket para actualizar la baseURL
+      const newBaseURL: string = await new Promise((resolve) => {
+        const handleMessage = (event: MessageEvent) => {
+          const [newIP, newPort] = event.data.split('<<DELIM>>');
+          if (newIP && newPort) {
+            const newBaseURL = `http://localhost:${newPort}`;
+            resolve(newBaseURL);
+          }
+        };
+        socket.addEventListener('message', handleMessage, { once: true });
+      });
+
+      currentBaseURL = newBaseURL;
+      api.defaults.baseURL = newBaseURL;
+      originalRequest.baseURL = newBaseURL;
+
+      return api(originalRequest);
+    }
+
     if (error.response) {
-      const message = error.response.data.detail || "Ocurrió un error inesperado.";
+      const message =
+        error.response.data.detail || 'Ocurrió un error inesperado.';
       if (error.response.status === 200) {
         toast.success(message);
       } else {
@@ -82,10 +97,10 @@ api.interceptors.response.use(
         localStorage.removeItem('authToken');
       }
     } else {
-      toast.error("Error de conexión con el servidor.");
+      toast.error('Error de conexión con el servidor.');
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
