@@ -86,7 +86,7 @@ class EventService(IEventService):
             raise HTTPException(status_code=400, detail=f"Los siguientes usuarios no pueden asistir: {unavailable_users}")
 
         created_event = await self.repo_instance.create(event)
-        background_tasks.add_task(self.validate_event, created_event.id, group_members)
+        background_tasks.add_task(self.validate_event, created_event.id, child_group_members)
 
         if event.by_owner:
             for member in child_group_members:

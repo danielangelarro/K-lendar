@@ -298,6 +298,9 @@ class ChordNode:
             if "visited" not in query_data:
                 query_data.setdefault("visited", [])
 
+            if self.id in query_data.get("visited", []):
+                return json.dumps([])
+
             table = query_data.get("table")
             filters = query_data.get("filters", {})
             Model = TABLE_MAP.get(table)
@@ -344,8 +347,6 @@ class ChordNode:
 
             current_node = self.succ
             
-            print("=====+++++=====>", query_data.get("visited", []), f"({current_node.id})")
-
             try:
                 query_data.get("visited", []).append(current_node.id)
                 remote_response = current_node.get_all_filtered(json.dumps(query_data))

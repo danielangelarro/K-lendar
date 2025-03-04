@@ -52,8 +52,6 @@ class InvitationRepository(IInvitationRepository):
                 "title": "Event Invitations",
                 "message": f'New event "{event["title"]}" assign in {group["group_name"]}.',
                 "is_read": False,
-                "created_at": None,
-                "updated_at": None,
             }
             await settings.node.store_key(
                 f"notification:{notification['id']}", json.dumps(notification)
@@ -154,8 +152,6 @@ class InvitationRepository(IInvitationRepository):
                 "title": "Info",
                 "is_read": False,
                 "priority": False,
-                "created_at": None,
-                "updated_at": None,
             }
             await settings.node.store_key(
                 f"notification:{notification['id']}", json.dumps(notification)

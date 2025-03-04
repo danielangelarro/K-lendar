@@ -105,7 +105,7 @@ class EventRepository(IEventRepository):
             event_json = await settings.node.retrieve_key(f"events:{ue['event_id']}")
             if event_json:
                 event = json.loads(event_json)
-                event["status"] = ue.get("status")
+                event["status"] = ue.get("status", "personal")
 
                 group_id = ue.get("group_id")
                 if group_id:
@@ -130,12 +130,10 @@ class EventRepository(IEventRepository):
         update_data = event_data.dict(exclude_unset=True)
         
         for key, value in update_data.items():
-            if key == "end_time":
+            if key == "end_datetime":
                 setattr(event, "end_datetime", value.isoformat())
-            elif key == "start_time":
+            elif key == "start_datetime":
                 setattr(event, "start_datetime", value.isoformat())
-            elif key == "event_type":
-                setattr(event, key, value.value)
             else:
                 event[key] = value
         
@@ -146,6 +144,7 @@ class EventRepository(IEventRepository):
         if ue_json:
             ue = json.loads(ue_json)
             ue["status"] = event_data.status
+            ue["event_type"] = event_data.event_type.value
             await settings.node.store_key(ue_key, json.dumps(ue))
         response = self.mapper.to_entity(event)
         response.status = event_data.status
