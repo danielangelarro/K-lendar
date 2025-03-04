@@ -12,7 +12,7 @@ def generate_unique_uuid(uuid1: uuid.UUID, uuid2: uuid.UUID) -> uuid.UUID:
     
     new_uuid = uuid.UUID(bytes=hash_bytes)
     
-    return new_uuid
+    return str(new_uuid)
 
 def generate_uuid() -> uuid.UUID:
     return str(uuid.uuid4())

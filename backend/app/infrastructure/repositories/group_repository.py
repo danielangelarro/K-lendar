@@ -86,8 +86,9 @@ class GroupRepository(IGroupRepository):
 
     
     async def get_by_name(self, group_name: str) -> GroupResponse:
-        query_payload = json.dumps({"table": "group", "filters": {"group_name": group_name}})
+        query_payload = json.dumps({"table": "groups", "filters": {"group_name": group_name}})
         groups_json = settings.node.ref.get_all_filtered(query_payload)
+
         group = json.loads(groups_json)[0] if groups_json else None
         
         return self.mapper.to_entity(group) if group else None

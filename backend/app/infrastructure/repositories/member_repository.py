@@ -46,9 +46,7 @@ class MemberRepository(IMemberRepository):
             "sender": group["owner_id"],
             "title": "Group Notifications",
             "message": f"You have been added to {group['group_name']} group. Do you want to stay or leave?",
-            "is_read": False,
-            "created_at": None,
-            "updated_at": None,
+            "is_read": False
         }
         await settings.node.store_key(
             f"notification:{notification['id']}", json.dumps(notification)
@@ -140,8 +138,6 @@ class MemberRepository(IMemberRepository):
             "message": f"You have been removed from {group['group_name']} group.",
             "title": "Group Notifications",
             "is_read": False,
-            "created_at": None,
-            "updated_at": None,
         }
         await settings.node.store_key(
             f"notification:{notification['id']}", json.dumps(notification)

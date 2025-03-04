@@ -40,33 +40,45 @@ class EventService(IEventService):
         return await self.repo_instance.create(event)
 
     async def create_event_group(self, event: EventCreate, background_tasks: BackgroundTasks) -> EventResponse:
+        print("Iniciando la creación del grupo de eventos.")
+
         # Obtenemos los miembros del grupo
         group_members = await self.member_service.get_members(event.group_id)
+        print(f"Miembros del grupo obtenidos: {group_members}")
 
         # Verificamos la disponibilidad de los miembros
         unavailable_users = []
         for member in group_members:
+            print(f"Verificando disponibilidad para el miembro: {member.id}")
             user_agenda = await self.agenda_service.get_user_agenda(member.id, event.start_time, event.end_time)
+            print(f"Agenda del usuario {member.id}: {user_agenda.events}")
             if user_agenda.events:  # Si hay eventos en el rango de tiempo
                 unavailable_users.append(member.id)
 
         if unavailable_users:
+            print(f"Usuarios no disponibles: {unavailable_users}")
             raise HTTPException(status_code=400, detail=f"Los siguientes usuarios no pueden asistir: {unavailable_users}")
 
         created_event = await self.repo_instance.create(event)
-        background_tasks.add_task(self.validate_event, created_event.id, group_members)
+        print(f"Evento creado: {created_event}")
 
         if event.by_owner:
+            print("El evento es creado por el propietario.")
             for member in group_members:
                 if member.id != event.creator_id:
-                    await self.repo_instance.asign_event(str(created_event.id), str(member.id), str(event.group_id))
+                    await self.repo_instance.asign_event(str(created_event.id), str(member.id), str(event.group_id), event.status)
         else:
+            print("Enviando invitaciones a los usuarios.")
             await self.invitation_service.invite_users(
                 event_id=created_event.id, 
                 user_ids=[member.id for member in group_members if member.id != event.creator_id],
                 group_id=event.group_id
             )
+            
+            background_tasks.add_task(self.validate_event, created_event.id, group_members)
+            print("Tarea de validación de evento añadida a las tareas en segundo plano.")
 
+        print("Creación del grupo de eventos completada.")
         return created_event
 
     async def create_event_hierarchical(self, event: EventCreate, background_tasks: BackgroundTasks) -> EventResponse:
@@ -86,7 +98,7 @@ class EventService(IEventService):
             raise HTTPException(status_code=400, detail=f"Los siguientes usuarios no pueden asistir: {unavailable_users}")
 
         created_event = await self.repo_instance.create(event)
-        background_tasks.add_task(self.validate_event, created_event.id, group_members)
+        background_tasks.add_task(self.validate_event, created_event.id, child_group_members)
 
         if event.by_owner:
             for member in child_group_members:

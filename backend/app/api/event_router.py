@@ -87,7 +87,7 @@ async def update_event(event_id: str, event_request: EventRequest, request: Requ
     group = None
 
     if event_request.group_name:
-        group = group_service.get_group_by_name(event_request.group_name)
+        group = await group_service.get_group_by_name(event_request.group_name)
 
         if not group:
             raise HTTPException(status_code=404, detail="Group not found")

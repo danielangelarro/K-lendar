@@ -61,10 +61,10 @@ class EventMapper(BaseMapper):
 class GroupMapper(BaseMapper):
     def to_table(self, group_create: GroupCreate) -> Dict:
         return {
-            "id": generate_uuid(),
+            "id": str(generate_uuid()),
             "group_name": group_create.name,
             "description": group_create.description,
-            "owner_id": str(group_create.owner.id),  # UUID a string
+            "owner_id": str(group_create.owner.id),
         }
 
     def to_entity(self, group: dict) -> GroupResponse:
@@ -78,7 +78,7 @@ class GroupMapper(BaseMapper):
 class MemberMapper(BaseMapper):
     def to_table(self, member_create: MemberCreate) -> Dict:
         return {
-            "id": generate_unique_uuid(member_create.user_id, member_create.group_id),
+            "id": str(generate_unique_uuid(member_create.user_id, member_create.group_id)),
             "user_id": str(member_create.user_id),
             "group_id": str(member_create.group_id),
         }
@@ -106,14 +106,14 @@ class InvitationMapper(BaseMapper):
 class NotificationMapper(BaseMapper):
     def to_entity(self, notification: Notification) -> NotificationResponse:
         return NotificationResponse(
-            id=uuid.UUID(notification.id),
-            recipient=uuid.UUID(notification.recipient),
-            message=notification.message,
-            is_read=notification.is_read,
-            priority=notification.priority if notification.priority is not None else True,
-            date=notification.created_at,
-            title=notification.title if notification.title else "Info",
-            event=notification.event,
+            id=uuid.UUID(notification["id"]),
+            recipient=uuid.UUID(notification["recipient"]),
+            message=notification["message"],
+            is_read=notification["is_read"],
+            priority=notification["priority"] if notification["priority"] is not None else True,
+            date=notification["created_at"],
+            title=notification["title"] if notification["title"] else "Info",
+            event=notification["event"],
         )
 
     def to_table(self, entity):

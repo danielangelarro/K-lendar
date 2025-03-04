@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from typing import List
 import uuid
@@ -7,7 +8,7 @@ from app.settings import settings
 from fastapi import HTTPException
 
 from app.application.repositories.event_repository import IEventRepository
-from app.domain.models.enum import EventStatus
+from app.domain.models.enum import EventStatus, EventType
 from app.domain.models.schemma import EventCreate, EventResponse
 from app.infrastructure.repositories.mapper import EventMapper, GroupMapper
 
@@ -37,12 +38,12 @@ class EventRepository(IEventRepository):
         response.status = event_create.status
         return response
 
-    async def asign_event(self, event_id: str, user_id: str, group_id: str) -> None:
+    async def asign_event(self, event_id: str, user_id: str, group_id: str, status: str) -> None:
         user_event = {
             "id": generate_uuid(),
             "user_id": user_id,
             "event_id": event_id,
-            "status": EventStatus.PENDING.value,
+            "status": status,
             "group_id": group_id,
         }
 
@@ -105,7 +106,7 @@ class EventRepository(IEventRepository):
             event_json = await settings.node.retrieve_key(f"events:{ue['event_id']}")
             if event_json:
                 event = json.loads(event_json)
-                event["status"] = ue.get("status")
+                event["status"] = ue.get("status", "personal")
 
                 group_id = ue.get("group_id")
                 if group_id:
@@ -129,24 +130,33 @@ class EventRepository(IEventRepository):
         event = json.loads(event_json)
         update_data = event_data.dict(exclude_unset=True)
         
-        for key, value in update_data.items():
-            if key == "end_time":
-                setattr(event, "end_datetime", value.isoformat())
-            elif key == "start_time":
-                setattr(event, "start_datetime", value.isoformat())
-            elif key == "event_type":
-                setattr(event, key, value.value)
-            else:
-                event[key] = value
-        
-        await settings.node.store_key(event_key, json.dumps(event))
+        event_updated = {
+            "id": event_id,
+            "title": update_data['title'],
+            "description": update_data['description'],
+            "start_datetime": update_data['start_time'].isoformat(),  # Datetime a string ISO
+            "end_datetime": update_data['end_time'].isoformat(),
+            "event_type": update_data['event_type'].value,
+            "creator": event['creator']
+        }
 
-        ue_key = f"user_event:{event_id}"
-        ue_json = await settings.node.retrieve_key(ue_key)
-        if ue_json:
-            ue = json.loads(ue_json)
-            ue["status"] = event_data.status
-            await settings.node.store_key(ue_key, json.dumps(ue))
+        await settings.node.store_key(event_key, json.dumps(event_updated))
+
+        query_payload = json.dumps({"table": "user_event", "filters": {"event_id": event_id}})
+        user_events_json = settings.node.ref.get_all_filtered(query_payload)
+        user_events = json.loads(user_events_json) if user_events_json else []
+
+        for user_event in user_events:
+            ue_key = f"user_event:{user_event['id']}"
+            print(f"~~~ event_repository ~ update [user_event]: {user_event}")
+
+            user_event_updated = user_event.copy()
+            user_event_updated["status"] = update_data['status']
+            
+            print(f"~~~ event_repository ~ update [user_event_updated]: {user_event_updated}")
+
+            await settings.node.store_key(ue_key, json.dumps(user_event_updated))
+        
         response = self.mapper.to_entity(event)
         response.status = event_data.status
 

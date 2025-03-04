@@ -52,8 +52,6 @@ class InvitationRepository(IInvitationRepository):
                 "title": "Event Invitations",
                 "message": f'New event "{event["title"]}" assign in {group["group_name"]}.',
                 "is_read": False,
-                "created_at": None,
-                "updated_at": None,
             }
             await settings.node.store_key(
                 f"notification:{notification['id']}", json.dumps(notification)
@@ -133,8 +131,9 @@ class InvitationRepository(IInvitationRepository):
         abstentions = len(user_events) - votes_for - votes_against
         validation_result = len(user_events) == votes_for
         
-        for ue in user_events:
-            await settings.node.delete_key(f"user_event:{ue['id']}")
+        if not validation_result:
+            for ue in user_events:
+                await settings.node.delete_key(f"user_event:{ue['id']}")
         
         notification_message = (
             f"🎉 The task has been {'validated ✅' if validation_result else 'not validated ❌'}. \n"
@@ -154,8 +153,6 @@ class InvitationRepository(IInvitationRepository):
                 "title": "Info",
                 "is_read": False,
                 "priority": False,
-                "created_at": None,
-                "updated_at": None,
             }
             await settings.node.store_key(
                 f"notification:{notification['id']}", json.dumps(notification)
