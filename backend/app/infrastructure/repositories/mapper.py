@@ -54,7 +54,7 @@ class EventMapper(BaseMapper):
             end_time=event['end_datetime'],
             event_type=event['event_type'],
             creator=uuid.UUID(event['creator']),
-            group=None
+            group=event['group'] if event['group'] else None
         )
 
 

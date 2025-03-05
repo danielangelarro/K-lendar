@@ -234,7 +234,7 @@ class ChordNode:
         if self.id > self.pred.id:
             if self.id > node.id > self.pred.id:
                 self.pred = node
-        elif node.id == self.pred.id or node.id > self.pred.id:
+        elif self.id == self.pred.id or node.id > self.pred.id:
             self.pred = node
 
     async def notify(self, node: "ChordNodeReference"):

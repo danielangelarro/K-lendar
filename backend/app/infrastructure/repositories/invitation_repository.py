@@ -18,12 +18,12 @@ class InvitationRepository(IInvitationRepository):
         self, event_id: uuid.UUID, user_ids: List[uuid.UUID], group_id: uuid.UUID
     ) -> None:
         # Recuperar el evento y el grupo desde el anillo
-        event_json = await settings.node.retrieve_key(f"events:{event_id}")
+        event_json = settings.node.ref.retrieve_key(f"events:{event_id}")
         if not event_json:
             raise HTTPException(status_code=404, detail="Event not found")
         event = json.loads(event_json)
 
-        group_json = await settings.node.retrieve_key(f"groups:{group_id}")
+        group_json = settings.node.ref.retrieve_key(f"groups:{group_id}")
         if not group_json:
             raise HTTPException(status_code=404, detail="Group not found")
         group = json.loads(group_json)
@@ -39,7 +39,7 @@ class InvitationRepository(IInvitationRepository):
                 "created_at": None,
                 "updated_at": None,
             }
-            await settings.node.store_key(
+            settings.node.ref.store_key(
                 f"user_event:{user_event['id']}", json.dumps(user_event)
             )
             # Crear la notificación correspondiente
@@ -53,7 +53,7 @@ class InvitationRepository(IInvitationRepository):
                 "message": f'New event "{event["title"]}" assign in {group["group_name"]}.',
                 "is_read": False,
             }
-            await settings.node.store_key(
+            settings.node.ref.store_key(
                 f"notification:{notification['id']}", json.dumps(notification)
             )
 
@@ -74,7 +74,7 @@ class InvitationRepository(IInvitationRepository):
         user_event = user_events[0]
         user_event["status"] = EventStatus.CONFIRMED.value
         
-        await settings.node.store_key(
+        settings.node.ref.store_key(
             f"user_event:{user_event['id']}", json.dumps(user_event)
         )
 
@@ -96,7 +96,7 @@ class InvitationRepository(IInvitationRepository):
         user_event = user_events[0]
         user_event["status"] = EventStatus.CANCELLED.value
         
-        await settings.node.store_key(
+        settings.node.ref.store_key(
             f"user_event:{user_event['id']}", json.dumps(user_event)
         )
 
@@ -133,7 +133,7 @@ class InvitationRepository(IInvitationRepository):
         
         if not validation_result:
             for ue in user_events:
-                await settings.node.delete_key(f"user_event:{ue['id']}")
+                settings.node.ref.delete_key(f"user_event:{ue['id']}")
         
         notification_message = (
             f"🎉 The task has been {'validated ✅' if validation_result else 'not validated ❌'}. \n"
@@ -154,6 +154,6 @@ class InvitationRepository(IInvitationRepository):
                 "is_read": False,
                 "priority": False,
             }
-            await settings.node.store_key(
+            settings.node.ref.store_key(
                 f"notification:{notification['id']}", json.dumps(notification)
             )

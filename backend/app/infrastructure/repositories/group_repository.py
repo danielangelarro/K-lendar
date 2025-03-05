@@ -17,10 +17,10 @@ class GroupRepository(IGroupRepository):
 
     async def create(self, group_create: GroupCreate) -> GroupResponse:
         group = self.mapper.to_table(group_create)
-        await settings.node.store_key(f"groups:{group['id']}", json.dumps(group))
+        settings.node.ref.store_key(f"groups:{group['id']}", json.dumps(group))
 
         member = self.member_mapper.to_table(MemberCreate(user_id=group_create.owner.id, group_id=group["id"]))
-        await settings.node.store_key(f"member:{member['id']}", json.dumps(member))
+        settings.node.ref.store_key(f"member:{member['id']}", json.dumps(member))
 
         query_payload = json.dumps(
             {"table": "member", "filters": {"group_id": str(group['id'])}}
@@ -35,7 +35,7 @@ class GroupRepository(IGroupRepository):
         return response
 
     async def get_by_id(self, group_id: uuid.UUID) -> GroupResponse:
-        group_json = await settings.node.retrieve_key(f"groups:{group_id}")
+        group_json = settings.node.ref.retrieve_key(f"groups:{group_id}")
         if not group_json:
             return None
         group = json.loads(group_json)
@@ -53,7 +53,7 @@ class GroupRepository(IGroupRepository):
 
         for group_id in group_ids:
             # Obtener los datos del grupo desde Chord
-            group_json = await settings.node.retrieve_key(f"groups:{group_id}")
+            group_json = settings.node.ref.retrieve_key(f"groups:{group_id}")
             if not group_json:
                 continue
             group = json.loads(group_json)
@@ -75,7 +75,7 @@ class GroupRepository(IGroupRepository):
 
             if hierarchy:
                 parent_group_id = hierarchy[0]["parent_group_id"]
-                parent_group_json = await settings.node.retrieve_key(f"groups:{parent_group_id}")
+                parent_group_json = settings.node.ref.retrieve_key(f"groups:{parent_group_id}")
                 if parent_group_json:
                     parent_group = json.loads(parent_group_json)
                     group_entity.parent = parent_group["group_name"]
@@ -95,7 +95,7 @@ class GroupRepository(IGroupRepository):
 
     async def update(self, group_id: uuid.UUID, group_data: GroupCreate) -> GroupResponse:
         group_key = f"groups:{group_id}"
-        group_json = await settings.node.retrieve_key(group_key)
+        group_json = settings.node.ref.retrieve_key(group_key)
 
         if not group_json:
             raise HTTPException(status_code=404, detail="Group not found")
@@ -107,18 +107,18 @@ class GroupRepository(IGroupRepository):
         group["group_name"] = group_data.name
         group["description"] = group_data.description
 
-        await settings.node.store_key(group_key, json.dumps(group))
-        await settings.node.store_key(f"group_name:{group_data.name}", json.dumps(group))
+        settings.node.ref.store_key(group_key, json.dumps(group))
+        settings.node.ref.store_key(f"group_name:{group_data.name}", json.dumps(group))
 
         return self.mapper.to_entity(group)
     
     async def update_parent(self, group_id: uuid.UUID, parent_group_id: uuid.UUID) -> GroupResponse:
-        group_json = await settings.node.retrieve_key(f"groups:{group_id}")
+        group_json = settings.node.ref.retrieve_key(f"groups:{group_id}")
         if not group_json:
             raise HTTPException(status_code=404, detail="Group not found")
         
         group = json.loads(group_json)
-        parent_json = await settings.node.retrieve_key(f"groups:{parent_group_id}")
+        parent_json = settings.node.ref.retrieve_key(f"groups:{parent_group_id}")
         
         if not parent_json:
             raise HTTPException(status_code=404, detail="Parent group not found")
@@ -128,12 +128,12 @@ class GroupRepository(IGroupRepository):
             "parent_group_id": str(parent_group_id),
             "child_group_id": str(group_id)
         }
-        await settings.node.store_key(f"group_hierarchy:{hierarchy['id']}", json.dumps(hierarchy))
+        settings.node.ref.store_key(f"group_hierarchy:{hierarchy['id']}", json.dumps(hierarchy))
         
         return self.mapper.to_entity(group)
 
     async def delete(self, group_id: uuid.UUID, user_id: uuid.UUID):
-        group_json = await settings.node.retrieve_key(f"groups:{group_id}")
+        group_json = settings.node.ref.retrieve_key(f"groups:{group_id}")
         if not group_json:
             raise HTTPException(status_code=404, detail="Group not found")
         group = json.loads(group_json)
@@ -141,7 +141,7 @@ class GroupRepository(IGroupRepository):
         if group["owner_id"] != str(user_id):
             raise HTTPException(status_code=403, detail="You are not the owner of this group")
         
-        await settings.node.delete_key(f"groups:{group_id}")
+        settings.node.ref.delete_key(f"groups:{group_id}")
 
         # Remove members
         payload = {
@@ -153,7 +153,7 @@ class GroupRepository(IGroupRepository):
         if members_json:
             members = json.loads(members_json)
             for member in members:
-                await settings.node.delete_key(f"member:{member['id']}")
+                settings.node.ref.delete_key(f"member:{member['id']}")
         
         # Remove hierachy
         payload = {
@@ -166,7 +166,7 @@ class GroupRepository(IGroupRepository):
             ghs = json.loads(members_json)
             
             for gh in ghs:
-                await settings.node.delete_key(f"group_hierarchy:{gh['id']}")
+                settings.node.ref.delete_key(f"group_hierarchy:{gh['id']}")
         
         return {"message": "Group deleted successfully"}
         

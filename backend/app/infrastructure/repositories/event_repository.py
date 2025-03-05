@@ -20,7 +20,7 @@ class EventRepository(IEventRepository):
     async def create(self, event_create: EventCreate) -> EventResponse:
         event_dict = self.mapper.to_table(event_create)
         # Almacenar el evento
-        await settings.node.store_key(f"events:{event_dict['id']}", json.dumps(event_dict))
+        settings.node.ref.store_key(f"events:{event_dict['id']}", json.dumps(event_dict))
 
         # Registrar la relación en la tabla user_event
         user_event = {
@@ -30,7 +30,7 @@ class EventRepository(IEventRepository):
             "status": event_create.status,
             "group_id": str(event_create.group_id) if event_create.group_id else None,
         }
-        await settings.node.store_key(
+        settings.node.ref.store_key(
             f"user_event:{user_event['id']}", json.dumps(user_event)
         )
 
@@ -47,12 +47,12 @@ class EventRepository(IEventRepository):
             "group_id": group_id,
         }
 
-        await settings.node.store_key(
+        settings.node.ref.store_key(
             f"user_event:{user_event['id']}", json.dumps(user_event)
         )
 
-        event = await settings.node.retrieve_key(f"events:{event_id}")
-        group = await settings.node.retrieve_key(f"events:{group_id}")
+        event = settings.node.ref.retrieve_key(f"events:{event_id}")
+        group = settings.node.ref.retrieve_key(f"events:{group_id}")
 
         is_owner = False
 
@@ -71,12 +71,12 @@ class EventRepository(IEventRepository):
             "title": "Event Invitations",
             "message": f"New event assigned for event {event_id} in group {group_id}.",
         }
-        await settings.node.store_key(
+        settings.node.ref.store_key(
             f"notification:{notification['id']}", json.dumps(notification)
         )
 
     async def get_by_id(self, event_id: uuid.UUID) -> EventResponse:
-        event_json = await settings.node.retrieve_key(f"events:{event_id}")
+        event_json = settings.node.ref.retrieve_key(f"events:{event_id}")
 
         query_payload = json.dumps(
             {"table": "user_event", "filters": {"event_id": str(event_id)}}
@@ -103,14 +103,14 @@ class EventRepository(IEventRepository):
 
         events = []
         for ue in user_events:
-            event_json = await settings.node.retrieve_key(f"events:{ue['event_id']}")
+            event_json = settings.node.ref.retrieve_key(f"events:{ue['event_id']}")
             if event_json:
                 event = json.loads(event_json)
                 event["status"] = ue.get("status", "personal")
 
                 group_id = ue.get("group_id")
                 if group_id:
-                    group_json = await settings.node.retrieve_key(f"groups:{group_id}")
+                    group_json = settings.node.ref.retrieve_key(f"groups:{group_id}")
                     if group_json:
                         event["group"] = json.loads(group_json)
 
@@ -122,7 +122,7 @@ class EventRepository(IEventRepository):
         self, event_id: uuid.UUID, event_data: EventCreate
     ) -> EventResponse:
         event_key = f"events:{event_id}"
-        event_json = await settings.node.retrieve_key(event_key)
+        event_json = settings.node.ref.retrieve_key(event_key)
 
         if not event_json:
             raise HTTPException(status_code=404, detail="Event not found")
@@ -140,7 +140,7 @@ class EventRepository(IEventRepository):
             "creator": event['creator']
         }
 
-        await settings.node.store_key(event_key, json.dumps(event_updated))
+        settings.node.ref.store_key(event_key, json.dumps(event_updated))
 
         query_payload = json.dumps({"table": "user_event", "filters": {"event_id": event_id}})
         user_events_json = settings.node.ref.get_all_filtered(query_payload)
@@ -155,7 +155,7 @@ class EventRepository(IEventRepository):
             
             print(f"~~~ event_repository ~ update [user_event_updated]: {user_event_updated}")
 
-            await settings.node.store_key(ue_key, json.dumps(user_event_updated))
+            settings.node.ref.store_key(ue_key, json.dumps(user_event_updated))
         
         response = self.mapper.to_entity(event)
         response.status = event_data.status
@@ -163,5 +163,5 @@ class EventRepository(IEventRepository):
         return response
 
     async def delete(self, event_id: uuid.UUID):
-        await settings.node.delete_key(f"events:{event_id}")
-        await settings.node.delete_key(f"user_event:{event_id}")
+        settings.node.ref.delete_key(f"events:{event_id}")
+        settings.node.ref.delete_key(f"user_event:{event_id}")

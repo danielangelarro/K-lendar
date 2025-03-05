@@ -15,16 +15,13 @@ class UserRepository(IUserRepository):
     async def create(self, user_create: UserCreate) -> UserResponse:
         user = self.mapper.to_table(user_create)
         
-        print("settings.node:",settings.node)
-        logging.info("settings.node:",settings.node)
-
-        await settings.node.store_key(f"users:{user['id']}", json.dumps(user))
+        settings.node.ref.store_key(f"users:{user['id']}", json.dumps(user))
 
         return self.mapper.to_entity(user)
 
     async def update(self, id: uuid.UUID, user_data: dict) -> UserResponse:
         user_key = f"users:{id}"
-        user_json = await settings.node.retrieve_key(user_key)
+        user_json = settings.node.ref.retrieve_key(user_key)
 
         if not user_json:
             raise Exception("User not found")
@@ -32,12 +29,12 @@ class UserRepository(IUserRepository):
 
         for key, value in user_data.items():
             user[key] = value
-        await settings.node.store_key(user_key, json.dumps(user))
+        settings.node.ref.store_key(user_key, json.dumps(user))
 
         return self.mapper.to_entity(user)
 
     async def get_by_id(self, id: uuid.UUID) -> UserResponse:
-        user_json = await settings.node.retrieve_key(f"users:{id}")
+        user_json = settings.node.ref.retrieve_key(f"users:{id}")
         if user_json:
             user = json.loads(user_json)
             return self.mapper.to_entity(user)
@@ -70,7 +67,7 @@ class UserRepository(IUserRepository):
 
     async def delete(self, id: uuid.UUID):
         user_key = f"users:{id}"
-        user_json = await settings.node.retrieve_key(user_key)
+        user_json = settings.node.ref.retrieve_key(user_key)
 
         if user_json:
-            await settings.node.delete_key(user_key)
+            settings.node.ref.delete_key(user_key)
