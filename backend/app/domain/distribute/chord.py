@@ -236,6 +236,8 @@ class ChordNode:
                 self.pred = node
         elif self.id == self.pred.id or node.id > self.pred.id:
             self.pred = node
+        
+        print(f"JOIN COMPLETED: {self.ref} [pred: {self.ref.pred}] [succ: {self.ref.succ}]")
 
     async def notify(self, node: "ChordNodeReference"):
         if node.id == self.id:
@@ -262,7 +264,7 @@ class ChordNode:
                 if self.succ.id != self.id:
                     response = self.succ.ping()
 
-                    if response != "Ok":
+                    if response != "OK":
                         self.succ = self.ref
             except Exception as e:
                 print(f"Error en check_predecessor_successor (succ): {e}")
@@ -277,7 +279,7 @@ class ChordNode:
             except Exception as e:
                 print(f"Error en check_predecessor_successor (pred): {e}")
                 self.pred = self.ref
-            time.sleep(3)
+            time.sleep(5)
 
     # ------------------ Métodos de acceso a datos usando SQLAlchemy ------------------
 
@@ -293,8 +295,6 @@ class ChordNode:
         """
         try:
             query_data: dict = json.loads(query_payload)
-
-            print("~~~ _handle_get_all_filtered ~ [query_data]:", query_data)
 
             if "visited" not in query_data:
                 query_data.setdefault("visited", [])
@@ -633,7 +633,7 @@ class ChordNode:
     async def refresh_replication_loop(self):
         while True:
             await self.refresh_replication()
-            time.sleep(60)
+            time.sleep(5)
 
     def start_server(self):
         print(f"Iniciando servidor en {self.ip}:{self.port}")

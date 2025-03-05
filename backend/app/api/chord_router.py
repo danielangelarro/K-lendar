@@ -14,15 +14,13 @@ router = APIRouter()
 
 @router.get("/successor")
 async def get_successor():
-    successor = settings.node.succ
-    logging.info(f"Endpoint /successor llamado: {successor}")
+    successor = settings.node.ref.succ
     return {"successor": str(successor)}
 
 
 @router.get("/predecessor")
 async def get_predecessor():
-    predecessor = settings.node.pred
-    logging.info(f"Endpoint /predecessor llamado: {predecessor}")
+    predecessor = settings.node.ref.pred
     return {"predecessor": str(predecessor) if predecessor else None}
 
 

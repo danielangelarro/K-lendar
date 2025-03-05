@@ -51,7 +51,7 @@ def check_servers():
                 if (ip, port) in active_servers:
                     active_servers.remove((ip, port))
         print(active_servers)
-        asyncio.sleep(5)
+        time.sleep(5)
 
 
 @app.websocket("/ws")
@@ -75,7 +75,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 except requests.RequestException as e:
                     print("Error al comprobar servidor:", e)
                     active_servers.discard((ip, port))
-            await asyncio.sleep(3)
+            time.sleep(5)
     except WebSocketDisconnect:
         print("WebSocket client disconnected")
 
