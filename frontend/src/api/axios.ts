@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 
 // La URL inicial se obtiene de las variables de entorno
 let currentBaseURL = import.meta.env.VITE_API_URL;
+const WS_PORT = import.meta.env.WS_PORT;
 
 // Crear instancia de axios con la URL inicial
 const api = axios.create({
@@ -11,7 +12,7 @@ const api = axios.create({
 
 // Obtener el hostname actual del navegador
 const currentHost = window.location.hostname; // devuelve la IP o dominio actual
-const WEBSOCKET_URL = `ws://${currentHost}:8000/ws`; // Conectar al WebSocket del servidor FastAPI
+const WEBSOCKET_URL = `ws://${currentHost}:${WS_PORT}/ws`; // Conectar al WebSocket del servidor FastAPI
 console.log('Conectando al WebSocket en:', WEBSOCKET_URL);
 
 // Conexión al WebSocket para recibir actualizaciones de IP y puerto

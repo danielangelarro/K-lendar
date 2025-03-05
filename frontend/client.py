@@ -1,3 +1,4 @@
+import os
 import threading
 import time
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -88,4 +89,5 @@ async def startup_event():
 
 if __name__ == "__main__":
     host = socket.gethostbyname(socket.gethostname())
-    uvicorn.run(app, host=host, port=8000)
+    port = int(os.getenv('WS_PORT', 8000))
+    uvicorn.run(app, host=host, port=port)

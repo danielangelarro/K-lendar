@@ -26,11 +26,6 @@ RUN chmod +x /app/monitor.sh /app/update_env.sh /app/run_client.sh \
     && sed -i 's/\r$//' /app/run_client.sh
 
 EXPOSE 5173
-EXPOSE 8765
-
-# Definir variables de entorno para el host y el puerto
-ENV FASTAPI_HOST=0.0.0.0
-ENV FASTAPI_PORT=8765
 
 # Ejecutar el script de arranque al iniciar el contenedor
 CMD ["/bin/sh", "/app/run_client.sh"]

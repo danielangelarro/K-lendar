@@ -383,7 +383,7 @@ class ChordNode:
         key_hash = getShaRepr(key)
         primary_node = self.find_succ(key_hash)
 
-        # print("STORE KEY", primary_node, key, value)
+        print("STORE KEY", primary_node.id, self.id, key_hash)
 
         if primary_node.id == self.id:
             if ":" not in key:
