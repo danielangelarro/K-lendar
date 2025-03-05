@@ -20,7 +20,9 @@ class EventRepository(IEventRepository):
     async def create(self, event_create: EventCreate) -> EventResponse:
         event_dict = self.mapper.to_table(event_create)
         # Almacenar el evento
-        settings.node.ref.store_key(f"events:{event_dict['id']}", json.dumps(event_dict))
+        settings.node.ref.store_key(
+            f"events:{event_dict['id']}", json.dumps(event_dict)
+        )
 
         # Registrar la relación en la tabla user_event
         user_event = {
@@ -38,7 +40,9 @@ class EventRepository(IEventRepository):
         response.status = event_create.status
         return response
 
-    async def asign_event(self, event_id: str, user_id: str, group_id: str, status: str) -> None:
+    async def asign_event(
+        self, event_id: str, user_id: str, group_id: str, status: str
+    ) -> None:
         user_event = {
             "id": generate_uuid(),
             "user_id": user_id,
@@ -83,7 +87,7 @@ class EventRepository(IEventRepository):
         )
         ue_json = settings.node.ref.get_all_filtered(query_payload)
         ue_list = json.loads(ue_json) if ue_json else []
-        
+
         if not event_json or not ue_list:
             return None
         event = json.loads(event_json)
@@ -126,37 +130,38 @@ class EventRepository(IEventRepository):
 
         if not event_json:
             raise HTTPException(status_code=404, detail="Event not found")
-        
+
         event = json.loads(event_json)
         update_data = event_data.dict(exclude_unset=True)
-        
+
         event_updated = {
             "id": event_id,
-            "title": update_data['title'],
-            "description": update_data['description'],
-            "start_datetime": update_data['start_time'].isoformat(),  # Datetime a string ISO
-            "end_datetime": update_data['end_time'].isoformat(),
-            "event_type": update_data['event_type'].value,
-            "creator": event['creator']
+            "title": update_data["title"],
+            "description": update_data["description"],
+            "start_datetime": update_data[
+                "start_time"
+            ].isoformat(),  # Datetime a string ISO
+            "end_datetime": update_data["end_time"].isoformat(),
+            "event_type": update_data["event_type"].value,
+            "creator": event["creator"],
         }
 
         settings.node.ref.store_key(event_key, json.dumps(event_updated))
 
-        query_payload = json.dumps({"table": "user_event", "filters": {"event_id": event_id}})
+        query_payload = json.dumps(
+            {"table": "user_event", "filters": {"event_id": event_id}}
+        )
         user_events_json = settings.node.ref.get_all_filtered(query_payload)
         user_events = json.loads(user_events_json) if user_events_json else []
 
         for user_event in user_events:
             ue_key = f"user_event:{user_event['id']}"
-            print(f"~~~ event_repository ~ update [user_event]: {user_event}")
 
             user_event_updated = user_event.copy()
-            user_event_updated["status"] = update_data['status']
-            
-            print(f"~~~ event_repository ~ update [user_event_updated]: {user_event_updated}")
+            user_event_updated["status"] = update_data["status"]
 
             settings.node.ref.store_key(ue_key, json.dumps(user_event_updated))
-        
+
         response = self.mapper.to_entity(event)
         response.status = event_data.status
 

@@ -37,7 +37,6 @@ async def receive_keys(payload: KeysPayload):
     async with get_db() as session:
         try:
             # Obtener las llaves actuales de cada tabla
-            print("Obtener las llaves actuales de cada tabla")
             for table in tables:
                 model = TABLE_MAP.get(table)
                 if not model:
@@ -54,7 +53,6 @@ async def receive_keys(payload: KeysPayload):
             if updated_at > payload.updated_at:
                 return {"status": "success", "message": "Keys not updated, before my keys"}
             
-            print("Insertar/Actualizar las llaves recibidas")
             for key, value in received.items():
                 table, entity_id = key.split(':', 1)
                 model = TABLE_MAP.get(table)
@@ -72,7 +70,6 @@ async def receive_keys(payload: KeysPayload):
                                 # Si no es un formato de fecha válido, dejarlo como está
                                 pass
                 except json.JSONDecodeError as e:
-                    print(f"Error parseando valor para {key}: {e}")
                     return
 
                 data['id'] = entity_id
@@ -95,5 +92,4 @@ async def receive_keys(payload: KeysPayload):
         except Exception as e:
             print("Error en receive_keys", e)
     
-    print("Llaves recibidas y almacenadas")
     return {"status": "success", "message": "Keys received"}

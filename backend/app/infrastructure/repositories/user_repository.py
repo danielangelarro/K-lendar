@@ -14,7 +14,7 @@ class UserRepository(IUserRepository):
 
     async def create(self, user_create: UserCreate) -> UserResponse:
         user = self.mapper.to_table(user_create)
-        
+
         settings.node.ref.store_key(f"users:{user['id']}", json.dumps(user))
 
         return self.mapper.to_entity(user)
@@ -41,14 +41,9 @@ class UserRepository(IUserRepository):
         return None
 
     async def get_by_username(self, username: str) -> UserResponse:
-        payload = {
-            "table": "users",
-            "filters": {"username": username}
-        }
+        payload = {"table": "users", "filters": {"username": username}}
         users_json = settings.node.ref.get_all_filtered(json.dumps(payload))
         users_list = json.loads(users_json) if users_json else []
-
-        print("user_list", users_list)
 
         if not users_list:
             return None
@@ -56,10 +51,7 @@ class UserRepository(IUserRepository):
         return self.mapper.to_entity(users_list[0])
 
     async def get_all(self) -> list[UserResponse]:
-        payload = {
-            "table": "users",
-            "filters": {}
-        }
+        payload = {"table": "users", "filters": {}}
         users_json = settings.node.ref.get_all_filtered(json.dumps(payload))
         users = json.loads(users_json) if users_json else []
 

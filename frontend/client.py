@@ -51,7 +51,7 @@ def check_servers():
                 if (ip, port) in active_servers:
                     active_servers.remove((ip, port))
         print(active_servers)
-        time.sleep(5)
+        time.sleep(10)
 
 
 @app.websocket("/ws")
@@ -75,17 +75,15 @@ async def websocket_endpoint(websocket: WebSocket):
                 except requests.RequestException as e:
                     print("Error al comprobar servidor:", e)
                     active_servers.discard((ip, port))
-            time.sleep(5)
+            time.sleep(10)
     except WebSocketDisconnect:
         print("WebSocket client disconnected")
 
 
 @app.on_event("startup")
 async def startup_event():
-    print("Iniciando...")
     threading.Thread(target=listen_multicast, daemon=True).start()
     threading.Thread(target=check_servers, daemon=True).start()
-    print("Iniciado correctamente!")
 
 
 if __name__ == "__main__":

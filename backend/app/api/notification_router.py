@@ -12,9 +12,7 @@ router = APIRouter()
 @router.websocket("/notifications/ws")
 async def websocket_notifications(websocket: WebSocket, request: Request):
     try:
-        print("connect websocket...")
         await require_authentication(request)
-        print("connect websocket...")
         current_user = request.state.current_user
     except HTTPException:
         await websocket.close(code=1008)
@@ -22,9 +20,7 @@ async def websocket_notifications(websocket: WebSocket, request: Request):
 
     notification_service: INotificationService = inject.instance(INotificationService)
     
-    print("websocket accepted...")
     await websocket.accept()
-    print("websocket accepted!!!")
     
     try:
         while True:
@@ -32,7 +28,7 @@ async def websocket_notifications(websocket: WebSocket, request: Request):
             
             await websocket.send_json(notifications.json())
             
-            await asyncio.sleep(5) 
+            await asyncio.sleep(10) 
     
     except WebSocketDisconnect:
         print("WebSocket desconectado")
